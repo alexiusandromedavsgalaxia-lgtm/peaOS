@@ -2,12 +2,19 @@
 
 peaOS is being built as a complete desktop operating system, primarily in freestanding C++, with a tiny assembly entry layer where the CPU requires it.
 
+## CPU architecture: X90
+
+**X90** is peaOS's name for its native **64-bit x86_64 platform target**. From this point forward, the 64-bit kernel, boot image, build target and platform-specific code are identified as X90.
+
+X90 is not a second CPU architecture. It is peaOS's platform/architecture name for its x86_64 system target.
+
 ## Current foundation
 
 The project now has a structured kernel instead of a single-file demo:
 
 - Multiboot/GRUB boot path
-- C++ kernel entry
+- X90 x86_64 long-mode entry
+- 64-bit C++ kernel entry
 - VGA console with scrolling
 - bootstrap heap allocator
 - native shell entry point
@@ -19,7 +26,7 @@ The project now has a structured kernel instead of a single-file demo:
 ### Hardware and kernel
 
 - BIOS + UEFI boot support
-- x86_64 long mode
+- **X90 x86_64 long mode**
 - GDT/IDT, APIC, ACPI and SMP
 - physical and virtual memory managers
 - kernel heap
