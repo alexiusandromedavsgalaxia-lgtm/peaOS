@@ -1,12 +1,18 @@
 #include <stdint.h>
+#include "kernel/console.hpp"
+#include "kernel/memory.hpp"
+#include "kernel/shell.hpp"
 
 extern "C" void kernel_main(uint32_t magic, uint32_t multiboot_info) {
-    volatile uint16_t* vga = reinterpret_cast<volatile uint16_t*>(0xB8000);
-    const char* text = "peaOS booted - C++ kernel";
-    for (uint32_t i = 0; text[i]; ++i) vga[i] = static_cast<uint16_t>(text[i]) | 0x0F00;
-    (void)magic;
+    console::clear();
+    console::write_line("peaOS 0.2");
+    console::write_line("----------------------------------------");
+    if (magic == 0x2BADB002) console::write_line("Multiboot: OK");
+    else console::write_line("Multiboot: invalid magic");
+    console::write_line("C++ kernel: online");
+    memory::init();
+    console::write_line("Bootstrap heap: 1 MiB online");
     (void)multiboot_info;
-    for (;;) {
-        asm volatile("hlt");
-    }
+    shell::run();
+    for (;;) asm volatile("hlt");
 }
