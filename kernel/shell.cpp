@@ -3,11 +3,13 @@
 #include <stdint.h>
 
 namespace shell {
+
 void run() {
-    console::write_line("peaOS shell v0.1");
-    console::write_line("Native command runtime is being brought online.");
-    console::write_line("Commands: help, version, mem, clear");
+    console::write_line("");
+    console::write_line("peaOS X90 shell");
+    console::write_line("Type 'help' for commands.");
     console::write("peaOS> ");
     for (;;) asm volatile("hlt");
 }
+
 }
