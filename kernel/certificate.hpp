@@ -52,7 +52,9 @@ Status validate(const Certificate* cert, uint64_t now, uint8_t app_count, Distri
 Status validate_server(const Certificate* cert, const ServerValidation& server, const uint8_t* expected_origin_hash, const uint8_t* package_hash);
 bool expired(const Certificate* cert, uint64_t now);
 bool can_add_application(const Certificate* cert, uint8_t current_count);
-bool install(const Certificate* cert);
+// Installs only after local structural/time/distribution validation.
+// Server-side signature, issuer, origin and package validation must happen before this call.
+bool install(const Certificate* cert, uint64_t now, uint8_t app_count, Distribution distribution);
 bool active();
 void invalidate();
 const Certificate* current();
