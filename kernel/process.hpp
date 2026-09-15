@@ -5,6 +5,8 @@ namespace process {
 using ProcessId = uint64_t;
 using EntryPoint = void (*)();
 
+// Kernel process descriptor. This is scheduling metadata, not a user-mode
+// execution context: address_space is zero until paging/isolation is implemented.
 struct Process {
     ProcessId id;
     uint64_t address_space;
@@ -24,5 +26,4 @@ bool terminate(ProcessId id);
 const Process* current();
 uint32_t count();
 void schedule_tick();
-void run_current();
 }
