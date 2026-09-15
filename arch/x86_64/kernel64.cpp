@@ -64,6 +64,7 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write_line("Application manager: online");
     console::write_line("Bootstrap heap: online");
 
+    ui::render_home();
     (void)syscall_api::kAbiVersion;
     asm volatile("sti");
     shell::run();
