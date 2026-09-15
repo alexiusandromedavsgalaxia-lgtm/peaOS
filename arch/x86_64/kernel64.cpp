@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "kernel/console.hpp"
 #include "kernel/memory.hpp"
+#include "kernel/version.hpp"
 #include "kernel/x90_features.hpp"
 #include "kernel/initial_setup.hpp"
 #include "kernel/hardware_probe.hpp"
@@ -18,6 +19,8 @@
 extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::clear();
     console::write_line("peaOS 1 Beta 1");
+    console::write("Kernel version: ");
+    console::write_line(kernel_version::kFullVersion);
     console::write_line("X90 | x86_64 | 64-bit");
     console::write_line("========================================");
 
