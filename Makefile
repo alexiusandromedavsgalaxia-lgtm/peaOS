@@ -3,7 +3,7 @@ LD := ld
 NASM := nasm
 GRUB := grub-mkrescue
 
-CXXFLAGS64 := -m64 -march=x86-64 -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fno-pie -fno-plt -fno-use-cxa-atexit -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -mno-red-zone -mno-sse -mno-sse2 -O2 -Wall -Wextra -Ikernel
+CXXFLAGS64 := -m64 -march=x86-64 -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fno-pie -fno-plt -fno-use-cxa-atexit -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -mno-red-zone -mno-sse -mno-sse2 -O2 -Wall -Wextra -Ikernel -I.
 LDFLAGS64 := -m elf_x86_64 -T arch/x86_64/linker.ld
 
 BUILD := build
