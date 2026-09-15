@@ -2,13 +2,15 @@ CXX := g++
 LD := ld
 NASM := nasm
 GRUB := grub-mkrescue
+NODE := node
 
-CXXFLAGS64 := -m64 -march=x86-64 -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fno-pie -fno-plt -fno-use-cxa-atexit -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -mno-red-zone -mno-sse -mno-sse2 -O2 -Wall -Wextra -Ikernel -I.
+CXXFLAGS64 := -m64 -march=x86-64 -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fno-pie -fno-plt -fno-use-cxa-atexit -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -mno-red-zone -mno-sse -mno-sse2 -O2 -Wall -Wextra -Ikernel -I. -I$(BUILD)/generated
 LDFLAGS64 := -m elf_x86_64 -T arch/x86_64/linker.ld
 
 BUILD := build
 ISO := $(BUILD)/peaOS-X90.iso
 KERNEL := $(BUILD)/peaOS-X90.bin
+REGISTRY_HEADER := $(BUILD)/generated/certificate_registry.hpp
 
 # Compile every kernel, hardware-driver and bundled-application translation unit.
 CPP_SOURCES := arch/x86_64/kernel64.cpp $(wildcard kernel/*.cpp) $(wildcard kernel/drivers/*.cpp) $(wildcard apps/*/*.cpp)
@@ -18,7 +20,13 @@ DEPFILES := $(CPP_OBJECTS:.o=.d)
 all: $(ISO)
 
 $(BUILD):
-	mkdir -p $(BUILD)/arch/x86_64 $(BUILD)/kernel $(BUILD)/kernel/drivers
+	mkdir -p $(BUILD)/arch/x86_64 $(BUILD)/kernel $(BUILD)/kernel/drivers $(BUILD)/generated
+
+$(REGISTRY_HEADER): web-distribution/certificate-service/sync-registry.mjs | $(BUILD)
+	$(NODE) $< $@
+
+# Every kernel translation unit sees a freshly fetched authoritative registry snapshot.
+$(CPP_OBJECTS): $(REGISTRY_HEADER)
 
 $(BUILD)/arch/x86_64/boot.o: arch/x86_64/boot.asm | $(BUILD)
 	mkdir -p $(dir $@)
@@ -40,9 +48,12 @@ $(ISO): $(KERNEL) arch/x86_64/grub.cfg
 run: $(ISO)
 	qemu-system-x86_64 -cdrom $(ISO)
 
+sync-certificates:
+	$(NODE) web-distribution/certificate-service/sync-registry.mjs $(REGISTRY_HEADER)
+
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all run clean
+.PHONY: all run sync-certificates clean
 
 -include $(DEPFILES)
