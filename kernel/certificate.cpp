@@ -25,11 +25,16 @@ Status validate_server(const Certificate* cert,const ServerValidation& server,co
     if(server.revoked||!server.active)return Status::NotActiveOnServer;
     if(!server.signature_valid)return Status::SignatureInvalid;
     if(!server.issuer_valid)return Status::IssuerMismatch;
-    if(!server.origin_valid||!equal_bytes(cert->origin_hash,expected_origin_hash,kSha256Size))return Status::OriginMismatch;
-    if(!server.package_valid||!package_hash)return Status::PackageMismatch;
+    if(!expected_origin_hash||!server.origin_valid||!equal_bytes(cert->origin_hash,expected_origin_hash,kSha256Size))return Status::OriginMismatch;
+    if(!package_hash||all_zero(package_hash,kSha256Size)||!server.package_valid)return Status::PackageMismatch;
     return Status::Valid;
 }
-bool install(const Certificate* cert){if(!cert)return false;g_current=*cert;g_active=true;return true;}
+bool install(const Certificate* cert,uint64_t now,uint8_t app_count,Distribution distribution){
+    if(validate(cert,now,app_count,distribution)!=Status::Valid)return false;
+    g_current=*cert;
+    g_active=true;
+    return true;
+}
 bool active(){return g_active;}
 void invalidate(){g_current={};g_active=false;}
 const Certificate* current(){return g_active?&g_current:nullptr;}
