@@ -10,17 +10,15 @@ BUILD := build
 ISO := $(BUILD)/peaOS-X90.iso
 KERNEL := $(BUILD)/peaOS-X90.bin
 
-# Build every kernel and bundled application translation unit.  The old
-# Makefile only linked kernel/*.cpp, which left app_registry and Development
-# out of the final kernel and caused unresolved symbols.
-CPP_SOURCES := arch/x86_64/kernel64.cpp $(wildcard kernel/*.cpp) $(wildcard apps/*/*.cpp)
+# Compile every kernel, hardware-driver and bundled-application translation unit.
+CPP_SOURCES := arch/x86_64/kernel64.cpp $(wildcard kernel/*.cpp) $(wildcard kernel/drivers/*.cpp) $(wildcard apps/*/*.cpp)
 CPP_OBJECTS := $(patsubst %.cpp,$(BUILD)/%.o,$(CPP_SOURCES))
 DEPFILES := $(CPP_OBJECTS:.o=.d)
 
 all: $(ISO)
 
 $(BUILD):
-	mkdir -p $(BUILD)/arch/x86_64 $(BUILD)/kernel
+	mkdir -p $(BUILD)/arch/x86_64 $(BUILD)/kernel $(BUILD)/kernel/drivers
 
 $(BUILD)/arch/x86_64/boot.o: arch/x86_64/boot.asm | $(BUILD)
 	mkdir -p $(dir $@)
