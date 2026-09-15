@@ -19,5 +19,6 @@ const Theme& theme();
 uint32_t width();
 uint32_t height();
 const char* style_name();
+void render_home();
 
 }
