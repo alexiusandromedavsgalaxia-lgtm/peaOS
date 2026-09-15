@@ -3,25 +3,41 @@
 #include "kernel/memory.hpp"
 #include "kernel/x90_features.hpp"
 #include "kernel/initial_setup.hpp"
+#include "kernel/hardware_probe.hpp"
+#include "kernel/activation.hpp"
 
 extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::clear();
     console::write_line("peaOS 1 Beta 1");
     console::write_line("X90 | x86_64 | 64-bit");
     console::write_line("========================================");
+
     if (magic == 0x2BADB002ULL) console::write_line("Multiboot: OK");
     else console::write_line("Multiboot: invalid magic");
+
     console::write_line("CPU mode: x86_64 long mode");
     console::write_line("C++ kernel: online");
+
     memory::init();
     x90_features::init();
+    activation::init();
     initial_setup::init();
+
+    const hardware_probe::Result hardware = hardware_probe::probe(multiboot_info);
+    console::write_line(hardware.cpuid_available ? "CPUID: OK" : "CPUID: unavailable");
+    console::write_line(hardware.long_mode_available ? "Long mode capability: OK" : "Long mode capability: unknown");
+    console::write_line(hardware.profile.cpu_supported ? "CPU baseline: supported" : "CPU baseline: unsupported");
+    console::write_line(hardware.profile.ram_bytes >= hardware::kMinimumRamBytes ? "RAM minimum: OK" : "RAM minimum: FAIL");
+    console::write_line("Storage probe: pending driver initialization");
+    console::write_line("Firmware validation: bootstrap profile");
+
     console::write_line("Initial Setup: privileged system service online");
     console::write_line("First boot: activation is part of Initial Setup");
+    console::write_line("Activation state: unactivated (fail-closed until online verification)");
     console::write_line("X90 Morph: ready");
     console::write_line("X90 filesystem snapshots: ready");
     console::write_line("X90 Fusion: ready");
     console::write_line("Bootstrap heap: online");
-    (void)multiboot_info;
+
     for (;;) asm volatile("hlt");
 }
