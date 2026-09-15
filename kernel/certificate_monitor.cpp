@@ -22,13 +22,13 @@ void add_state(InstallState state) {
 int find_index(uint64_t serial) {
     if (!serial) return -1;
     for (uint32_t i = 0; i < kMaxTrackedCertificates; ++i)
-        if (g_records[i].serial == serial) return static_cast<int>(i);
+        if (g_records[i].certificate.serial == serial) return static_cast<int>(i);
     return -1;
 }
 
 int free_index() {
     for (uint32_t i = 0; i < kMaxTrackedCertificates; ++i)
-        if (g_records[i].serial == 0) return static_cast<int>(i);
+        if (g_records[i].certificate.serial == 0) return static_cast<int>(i);
     return -1;
 }
 
@@ -36,12 +36,12 @@ void recompute_inventory() {
     clear_inventory();
     for (uint32_t i = 0; i < kMaxTrackedCertificates; ++i) {
         const CertificateRecord& r = g_records[i];
-        if (!r.serial) continue;
+        if (!r.certificate.serial) continue;
         ++g_inventory.total;
         if (r.installed) ++g_inventory.installed;
-        if (r.distribution == static_cast<uint8_t>(certificate::Distribution::Local))
+        if (r.certificate.distribution == static_cast<uint8_t>(certificate::Distribution::Local))
             ++g_inventory.local_distribution;
-        else if (r.distribution == static_cast<uint8_t>(certificate::Distribution::WebDistribution))
+        else if (r.certificate.distribution == static_cast<uint8_t>(certificate::Distribution::WebDistribution))
             ++g_inventory.web_distribution;
         add_state(r.state);
     }
@@ -83,9 +83,7 @@ bool register_certificate(const certificate::Certificate* cert, bool installed, 
     if (index < 0) return false;
 
     CertificateRecord& r = g_records[index];
-    r.serial = cert->serial;
-    for (uint32_t i = 0; i < sizeof(r.certificate_id); ++i) r.certificate_id[i] = cert->certificate_id[i];
-    r.distribution = cert->distribution;
+    r.certificate = *cert;
     r.installed = installed;
     r.server_active = false;
     r.server_revoked = false;
@@ -110,16 +108,9 @@ bool check_certificate(uint64_t serial, const certificate::ServerValidation& ser
     if (index < 0) return false;
 
     CertificateRecord& r = g_records[index];
-    certificate::Certificate cert{};
-    cert.magic = certificate::kMagic;
-    cert.version = certificate::kVersion;
-    cert.serial = r.serial;
-    cert.distribution = r.distribution;
-    for (uint32_t i = 0; i < sizeof(cert.certificate_id); ++i) cert.certificate_id[i] = r.certificate_id[i];
-
     r.server_active = server.active;
     r.server_revoked = server.revoked;
-    r.state = state_from_server(&cert, server, expected_origin_hash, package_hash, now);
+    r.state = state_from_server(&r.certificate, server, expected_origin_hash, package_hash, now);
     r.last_checked = now;
     recompute_inventory();
     return true;
@@ -130,8 +121,8 @@ uint32_t check_all(const certificate::ServerValidation& server,
                    uint64_t now) {
     uint32_t checked = 0;
     for (uint32_t i = 0; i < kMaxTrackedCertificates; ++i) {
-        if (!g_records[i].serial) continue;
-        if (check_certificate(g_records[i].serial, server, expected_origin_hash, package_hash, now))
+        if (!g_records[i].certificate.serial) continue;
+        if (check_certificate(g_records[i].certificate.serial, server, expected_origin_hash, package_hash, now))
             ++checked;
     }
     g_last_check = now;
