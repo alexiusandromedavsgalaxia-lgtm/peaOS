@@ -6,7 +6,6 @@ namespace window_manager {
 
 enum class State : uint8_t { Normal, Minimized, Maximized, Fullscreen };
 enum class Snap : uint8_t { None, Left, Right, Top, Bottom };
-
 enum class Hit : uint8_t { None, Titlebar, Close, Minimize, Maximize, ResizeLeft, ResizeRight, ResizeTop, ResizeBottom, Content };
 
 struct WindowInfo {
@@ -16,6 +15,10 @@ struct WindowInfo {
     int32_t y;
     uint32_t width;
     uint32_t height;
+    int32_t restore_x;
+    int32_t restore_y;
+    uint32_t restore_width;
+    uint32_t restore_height;
     uint32_t z;
     State state;
     Snap snap;
