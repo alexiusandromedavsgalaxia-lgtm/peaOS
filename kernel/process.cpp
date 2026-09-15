@@ -58,17 +58,10 @@ void schedule_tick() {
         const uint32_t index = (g_current + offset) % kMaxProcesses;
         if (g_processes[index].alive && g_processes[index].runnable) {
             g_current = index;
+            ++g_processes[index].ticks;
             return;
         }
     }
-}
-
-void run_current() {
-    if (g_count == 0 || g_current >= kMaxProcesses) return;
-    Process& p = g_processes[g_current];
-    if (!p.alive || !p.runnable || !p.entry) return;
-    ++p.ticks;
-    p.entry();
 }
 
 }
