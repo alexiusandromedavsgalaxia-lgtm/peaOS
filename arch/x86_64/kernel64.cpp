@@ -2,6 +2,7 @@
 #include "kernel/console.hpp"
 #include "kernel/memory.hpp"
 #include "kernel/x90_features.hpp"
+#include "kernel/initial_setup.hpp"
 
 extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::clear();
@@ -14,6 +15,9 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write_line("C++ kernel: online");
     memory::init();
     x90_features::init();
+    initial_setup::init();
+    console::write_line("Initial Setup: privileged system service online");
+    console::write_line("First boot: activation is part of Initial Setup");
     console::write_line("X90 Morph: ready");
     console::write_line("X90 filesystem snapshots: ready");
     console::write_line("X90 Fusion: ready");
