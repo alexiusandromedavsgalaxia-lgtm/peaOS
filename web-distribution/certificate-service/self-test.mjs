@@ -1,42 +1,29 @@
 import http from 'node:http';
+import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 
 process.env.PORT = '18787';
-const child = (await import('node:child_process')).spawn(process.execPath, ['server.mjs'], { stdio: ['ignore', 'pipe', 'inherit'] });
+process.env.PEAOS_CERT_ADMIN_TOKEN = 'self-test-token';
+process.env.PEAOS_CERT_KEY = './self-test-issuer.pem';
+process.env.PEAOS_CERT_DB = './self-test-certificates.json';
+const child = spawn(process.execPath, ['server.mjs'], { env: process.env, stdio: ['ignore', 'pipe', 'inherit'] });
 await once(child.stdout, 'data');
-
-const request = (method, path, body) => new Promise((resolve, reject) => {
-  const req = http.request({ hostname: '127.0.0.1', port: 18787, path, method, headers: { 'content-type': 'application/json' } }, res => {
-    let data = '';
-    res.on('data', c => data += c);
-    res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(data) }));
-  });
-  req.on('error', reject);
-  if (body) req.write(JSON.stringify(body));
-  req.end();
+const request = (method, path, body, token) => new Promise((resolve, reject) => {
+  const headers = {'content-type':'application/json'};
+  if(token) headers.authorization=`Bearer ${token}`;
+  const req=http.request({hostname:'127.0.0.1',port:18787,path,method,headers},res=>{let data='';res.on('data',c=>data+=c);res.on('end',()=>resolve({status:res.statusCode,body:JSON.parse(data)}));});
+  req.on('error',reject);if(body)req.write(JSON.stringify(body));req.end();
 });
-
-const issuer = await request('GET', '/v1/issuer');
-if (issuer.status !== 200) throw new Error('issuer endpoint failed');
-const now = Math.floor(Date.now() / 1000);
-const id = '0123456789abcdef0123456789abcdef';
-const cert = {
-  version: 1,
-  certificate_id: id,
-  issuer_key_id: issuer.body.issuer_key_id,
-  issued_at: now,
-  expires_at: now + 3600,
-  application_count: 1,
-  distribution: 'web',
-  origin: 'https://example.invalid',
-  applications: [{ package_hash: 'a'.repeat(64) }],
-  signature: '1'
-};
-const created = await request('POST', '/v1/certificates', cert);
-if (created.status !== 201 || !created.body.active) throw new Error('certificate activation failed');
-const active = await request('GET', `/v1/certificates/${id}`);
-if (active.status !== 200 || !active.body.active) throw new Error('certificate validation failed');
-const revoked = await request('POST', `/v1/certificates/${id}/revoke`);
-if (revoked.status !== 200 || revoked.body.active) throw new Error('certificate revocation failed');
+const issuer=await request('GET','/v1/issuer');
+if(issuer.status!==200||issuer.body.algorithm!=='Ed25519')throw new Error('issuer endpoint failed');
+const issued=await request('POST','/v1/certificates/issue',{application_count:1,origin:'https://example.invalid',applications:[{package_hash:'a'.repeat(64)}]},'self-test-token');
+if(issued.status!==201||!issued.body.active||!issued.body.certificate.signature)throw new Error('signed issuance failed');
+const id=issued.body.certificate_id;
+const active=await request('GET',`/v1/certificates/${id}`);
+if(active.status!==200||!active.body.active||active.body.certificate.signature!==issued.body.certificate.signature)throw new Error('server validation failed');
+const revoked=await request('POST',`/v1/certificates/${id}/revoke`,null,'self-test-token');
+if(revoked.status!==200||revoked.body.active)throw new Error('revocation failed');
+const after=await request('GET',`/v1/certificates/${id}`);
+if(after.status!==200||after.body.active||after.body.reason!=='revoked')throw new Error('revocation was not enforced');
 child.kill();
 console.log('certificate service self-test: OK');
