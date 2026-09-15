@@ -3,12 +3,12 @@ LD := ld
 NASM := nasm
 GRUB := grub-mkrescue
 
-CXXFLAGS64 := -m64 -march=x86-64 -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fno-pie -fno-use-cxa-atexit -fno-builtin -mno-red-zone -O2 -Wall -Wextra -Ikernel
+CXXFLAGS64 := -m64 -march=x86-64 -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fno-pie -fno-plt -fno-use-cxa-atexit -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -mno-red-zone -mno-sse -mno-sse2 -O2 -Wall -Wextra -Ikernel
 LDFLAGS64 := -m elf_x86_64 -T arch/x86_64/linker.ld
 
 BUILD := build
-ISO := $(BUILD)/peaOS64.iso
-KERNEL := $(BUILD)/peaOS64.bin
+ISO := $(BUILD)/peaOS-X90.iso
+KERNEL := $(BUILD)/peaOS-X90.bin
 
 CPP_SOURCES := arch/x86_64/kernel64.cpp $(wildcard kernel/*.cpp)
 CPP_OBJECTS := $(patsubst %.cpp,$(BUILD)/%.o,$(CPP_SOURCES))
@@ -30,7 +30,7 @@ $(KERNEL): $(BUILD)/arch/x86_64/boot.o $(CPP_OBJECTS) arch/x86_64/linker.ld
 
 $(ISO): $(KERNEL) arch/x86_64/grub.cfg
 	mkdir -p $(BUILD)/iso/boot/grub
-	cp $(KERNEL) $(BUILD)/iso/boot/peaOS64.bin
+	cp $(KERNEL) $(BUILD)/iso/boot/peaOS-X90.bin
 	cp arch/x86_64/grub.cfg $(BUILD)/iso/boot/grub/grub.cfg
 	$(GRUB) -o $@ $(BUILD)/iso
 
