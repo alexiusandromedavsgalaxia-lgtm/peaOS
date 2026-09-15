@@ -4,17 +4,21 @@ namespace development {
 namespace {
 MacLink g_mac{MacState::RequiresMac, false, false, 0};
 const char* g_status = "Selecciona un objetivo de desarrollo.";
+bool g_toolchain_ready[4] = {false, false, false, false};
 }
 
 void init() {
     g_mac = {MacState::RequiresMac, false, false, 0};
     g_status = "Selecciona un objetivo de desarrollo.";
+    for (bool& ready : g_toolchain_ready) ready = false;
 }
 
 Project create_project(Target target, const char* name) {
     Project p{target, name, target_extension(target), target == Target::MacOS};
-    if (target == Target::MacOS && g_mac.state == MacState::RequiresMac) {
-        g_status = "Desarrollo para macOS requiere un Mac conectado por USB-C con Xcode abierto.";
+    if (!name || !*name) {
+        g_status = "No se puede crear un proyecto sin nombre.";
+    } else if (!target_available(target)) {
+        g_status = "El toolchain seleccionado no está disponible.";
     } else {
         g_status = "Proyecto creado.";
     }
@@ -42,8 +46,9 @@ const char* target_extension(Target target) {
 }
 
 bool target_available(Target target) {
-    return target != Target::MacOS ||
-           (g_mac.usb_c_connected && g_mac.xcode_open && g_mac.state == MacState::Ready);
+    if (target == Target::MacOS)
+        return g_mac.usb_c_connected && g_mac.xcode_open && g_mac.state == MacState::Ready;
+    return g_toolchain_ready[static_cast<uint8_t>(target)];
 }
 
 void set_mac_connection(bool connected, bool xcode_open) {
@@ -52,7 +57,7 @@ void set_mac_connection(bool connected, bool xcode_open) {
     g_mac.synced_files = 0;
     if (!connected) {
         g_mac.state = MacState::Disconnected;
-        g_status = "Conecta un Mac por USB-C para iniciar el editor de macOS.";
+        g_status = "Mac desconectado: las operaciones de macOS se han detenido.";
     } else if (!xcode_open) {
         g_mac.state = MacState::WaitingForXcode;
         g_status = "Abre Xcode en el Mac conectado para continuar.";
@@ -65,11 +70,11 @@ void set_mac_connection(bool connected, bool xcode_open) {
 MacLink mac_link() { return g_mac; }
 
 bool request_build(Target target) {
+    if (!target_available(target)) {
+        g_status = "No se puede compilar: el toolchain/entorno requerido no está disponible.";
+        return false;
+    }
     if (target == Target::MacOS) {
-        if (!target_available(target)) {
-            g_status = "No se puede compilar para macOS: conecta un Mac con Xcode abierto.";
-            return false;
-        }
         g_mac.state = MacState::BuildRunning;
         g_status = "Orden de compilación enviada a Xcode por USB-C.";
         return true;
