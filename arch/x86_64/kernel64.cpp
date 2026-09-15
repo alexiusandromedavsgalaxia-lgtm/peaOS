@@ -12,6 +12,8 @@
 #include "kernel/shell.hpp"
 #include "kernel/vfs.hpp"
 #include "kernel/desktop.hpp"
+#include "kernel/ui.hpp"
+#include "kernel/app_manager.hpp"
 
 extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::clear();
@@ -34,6 +36,8 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     thread::init();
     vfs::init();
     desktop::init(1024, 768);
+    ui::init(1024, 768);
+    app_manager::init();
 
     const hardware_probe::Result hardware = hardware_probe::probe(multiboot_info);
     console::write_line(hardware.cpuid_available ? "CPUID: OK" : "CPUID: unavailable");
@@ -42,6 +46,8 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write_line(hardware.profile.ram_bytes >= hardware::kMinimumRamBytes ? "RAM minimum: OK" : "RAM minimum: FAIL");
     console::write_line("Storage: VFS bootstrap online");
     console::write_line("Desktop: window manager state online");
+    console::write("Interface: ");
+    console::write_line(ui::style_name());
     console::write_line("Firmware validation: bootstrap profile");
 
     console::write_line("Initial Setup: privileged system service online");
@@ -54,7 +60,8 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write_line("X90 Morph: ready");
     console::write_line("X90 filesystem snapshots: ready");
     console::write_line("X90 Fusion: ready");
-    console::write_line("Bundled apps: registry online");
+    console::write_line("Bundled apps: complete default suite registered");
+    console::write_line("Application manager: online");
     console::write_line("Bootstrap heap: online");
 
     (void)syscall_api::kAbiVersion;
