@@ -4,8 +4,18 @@ import fs from 'node:fs';
 
 const PORT = Number(process.env.PORT || 8787);
 const DATA_FILE = process.env.PEAOS_CERT_DB || './certificates.json';
+const KEY_FILE = process.env.PEAOS_CERT_KEY || './issuer-ed25519-private.pem';
 const ADMIN_TOKEN = process.env.PEAOS_CERT_ADMIN_TOKEN || '';
-const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
+
+let privateKey;
+let publicKey;
+try {
+  privateKey = crypto.createPrivateKey(fs.readFileSync(KEY_FILE));
+  publicKey = crypto.createPublicKey(privateKey);
+} catch {
+  ({ privateKey, publicKey } = crypto.generateKeyPairSync('ed25519'));
+  fs.writeFileSync(KEY_FILE, privateKey.export({ type: 'pkcs8', format: 'pem' }), { mode: 0o600 });
+}
 const issuerKeyId = crypto.createHash('sha256').update(publicKey.export({ type: 'spki', format: 'der' })).digest('hex').slice(0, 32);
 let state = new Map();
 try { const saved = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); for (const record of saved) state.set(record.certificate.certificate_id, record); } catch {}
