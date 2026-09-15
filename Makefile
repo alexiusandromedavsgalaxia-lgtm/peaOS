@@ -3,26 +3,30 @@ LD := ld
 NASM := nasm
 GRUB := grub-mkrescue
 
-CXXFLAGS := -m32 -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fno-pie -O2 -Wall -Wextra
+CXXFLAGS := -m32 -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fno-pie -fno-use-cxa-atexit -fno-builtin -O2 -Wall -Wextra -Ikernel
 LDFLAGS := -m elf_i386 -T linker.ld
 
 BUILD := build
 ISO := $(BUILD)/peaOS.iso
 KERNEL := $(BUILD)/peaOS.bin
 
+CPP_SOURCES := kernel.cpp $(wildcard kernel/*.cpp)
+CPP_OBJECTS := $(patsubst %.cpp,$(BUILD)/%.o,$(CPP_SOURCES))
+
 all: $(ISO)
 
 $(BUILD):
-	mkdir -p $(BUILD)
+	mkdir -p $(BUILD)/kernel
 
 $(BUILD)/boot.o: boot.asm | $(BUILD)
 	$(NASM) -f elf32 $< -o $@
 
-$(BUILD)/kernel.o: kernel.cpp | $(BUILD)
+$(BUILD)/%.o: %.cpp | $(BUILD)
+	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(KERNEL): $(BUILD)/boot.o $(BUILD)/kernel.o linker.ld
-	$(LD) $(LDFLAGS) -o $@ $(BUILD)/boot.o $(BUILD)/kernel.o
+$(KERNEL): $(BUILD)/boot.o $(CPP_OBJECTS) linker.ld
+	$(LD) $(LDFLAGS) -o $@ $(BUILD)/boot.o $(CPP_OBJECTS)
 
 $(ISO): $(KERNEL) grub.cfg
 	mkdir -p $(BUILD)/iso/boot/grub
