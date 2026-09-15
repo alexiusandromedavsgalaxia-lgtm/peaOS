@@ -10,8 +10,12 @@ BUILD := build
 ISO := $(BUILD)/peaOS-X90.iso
 KERNEL := $(BUILD)/peaOS-X90.bin
 
-CPP_SOURCES := arch/x86_64/kernel64.cpp $(wildcard kernel/*.cpp)
+# Build every kernel and bundled application translation unit.  The old
+# Makefile only linked kernel/*.cpp, which left app_registry and Development
+# out of the final kernel and caused unresolved symbols.
+CPP_SOURCES := arch/x86_64/kernel64.cpp $(wildcard kernel/*.cpp) $(wildcard apps/*/*.cpp)
 CPP_OBJECTS := $(patsubst %.cpp,$(BUILD)/%.o,$(CPP_SOURCES))
+DEPFILES := $(CPP_OBJECTS:.o=.d)
 
 all: $(ISO)
 
@@ -19,11 +23,12 @@ $(BUILD):
 	mkdir -p $(BUILD)/arch/x86_64 $(BUILD)/kernel
 
 $(BUILD)/arch/x86_64/boot.o: arch/x86_64/boot.asm | $(BUILD)
+	mkdir -p $(dir $@)
 	$(NASM) -f elf64 $< -o $@
 
-$(BUILD)/%.o: %.cpp | $(BUILD)
+$(BUILD)/%.o: %.cpp
 	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS64) -c $< -o $@
+	$(CXX) $(CXXFLAGS64) -MMD -MP -c $< -o $@
 
 $(KERNEL): $(BUILD)/arch/x86_64/boot.o $(CPP_OBJECTS) arch/x86_64/linker.ld
 	$(LD) $(LDFLAGS64) -o $@ $(BUILD)/arch/x86_64/boot.o $(CPP_OBJECTS)
@@ -41,3 +46,5 @@ clean:
 	rm -rf $(BUILD)
 
 .PHONY: all run clean
+
+-include $(DEPFILES)
