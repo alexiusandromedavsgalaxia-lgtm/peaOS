@@ -3,6 +3,7 @@
 namespace window_manager {
 namespace {
 WindowInfo g_windows[kMaxWindows]{};
+WindowInfo g_snapshot[kMaxWindows]{};
 uint32_t g_count = 0;
 uint32_t g_next_id = 1;
 uint32_t g_next_z = 1;
@@ -73,6 +74,7 @@ void init(uint32_t width, uint32_t height) {
     g_width = width ? width : 1024;
     g_height = height ? height : 768;
     for (auto& w : g_windows) w = {};
+    for (auto& w : g_snapshot) w = {};
     g_count = 0;
     g_next_id = 1;
     g_next_z = 1;
@@ -130,7 +132,10 @@ bool focus(uint32_t id) {
 bool move(uint32_t id, int32_t x, int32_t y) {
     WindowInfo* w = find(id);
     if (!w || w->state == State::Minimized || w->state == State::Fullscreen) return false;
-    if (w->state == State::Maximized) restore(id), w = find(id);
+    if (w->state == State::Maximized) {
+        restore(id);
+        w = find(id);
+    }
     if (!w) return false;
     save_restore_geometry(*w);
     w->x = x;
@@ -144,7 +149,10 @@ bool move(uint32_t id, int32_t x, int32_t y) {
 bool resize(uint32_t id, uint32_t width, uint32_t height) {
     WindowInfo* w = find(id);
     if (!w || w->state == State::Minimized || w->state == State::Fullscreen) return false;
-    if (w->state == State::Maximized) restore(id), w = find(id);
+    if (w->state == State::Maximized) {
+        restore(id);
+        w = find(id);
+    }
     if (!w) return false;
     w->state = State::Normal;
     w->snap = Snap::None;
@@ -186,14 +194,8 @@ bool maximize(uint32_t id) {
 bool restore(uint32_t id) {
     WindowInfo* w = find(id);
     if (!w) return false;
-    if (w->state == State::Minimized) {
+    if (w->state == State::Minimized || w->state == State::Maximized || w->state == State::Fullscreen || w->snap != Snap::None) {
         w->state = State::Normal;
-        restore_geometry(*w);
-    } else if (w->state == State::Maximized || w->state == State::Fullscreen) {
-        w->state = State::Normal;
-        restore_geometry(*w);
-    } else if (w->snap != Snap::None) {
-        w->snap = Snap::None;
         restore_geometry(*w);
     }
     w->snap = Snap::None;
@@ -259,7 +261,16 @@ Hit hit_test(uint32_t id, int32_t x, int32_t y) {
     return Hit::Content;
 }
 
-const WindowInfo* windows(uint32_t* count) { if (count) *count = g_count; return g_windows; }
+const WindowInfo* windows(uint32_t* count) {
+    uint32_t visible_count = 0;
+    for (uint32_t i = 0; i < kMaxWindows; ++i) {
+        if (!g_windows[i].visible) continue;
+        g_snapshot[visible_count++] = g_windows[i];
+    }
+    if (count) *count = visible_count;
+    return g_snapshot;
+}
+
 uint32_t focused() { return g_focused; }
 uint32_t screen_width() { return g_width; }
 uint32_t screen_height() { return g_height; }
