@@ -10,6 +10,8 @@
 #include "kernel/thread.hpp"
 #include "kernel/syscall.hpp"
 #include "kernel/shell.hpp"
+#include "kernel/vfs.hpp"
+#include "kernel/desktop.hpp"
 
 extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::clear();
@@ -30,13 +32,16 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     permissions::init();
     process::init();
     thread::init();
+    vfs::init();
+    desktop::init(1024, 768);
 
     const hardware_probe::Result hardware = hardware_probe::probe(multiboot_info);
     console::write_line(hardware.cpuid_available ? "CPUID: OK" : "CPUID: unavailable");
     console::write_line(hardware.long_mode_available ? "Long mode capability: OK" : "Long mode capability: unknown");
     console::write_line(hardware.profile.cpu_supported ? "CPU baseline: supported" : "CPU baseline: unsupported");
     console::write_line(hardware.profile.ram_bytes >= hardware::kMinimumRamBytes ? "RAM minimum: OK" : "RAM minimum: FAIL");
-    console::write_line("Storage probe: pending driver initialization");
+    console::write_line("Storage: VFS bootstrap online");
+    console::write_line("Desktop: window manager state online");
     console::write_line("Firmware validation: bootstrap profile");
 
     console::write_line("Initial Setup: privileged system service online");
@@ -49,6 +54,7 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write_line("X90 Morph: ready");
     console::write_line("X90 filesystem snapshots: ready");
     console::write_line("X90 Fusion: ready");
+    console::write_line("Bundled apps: registry online");
     console::write_line("Bootstrap heap: online");
 
     (void)syscall_api::kAbiVersion;
