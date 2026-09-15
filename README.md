@@ -20,6 +20,39 @@ The project now has a structured kernel instead of a single-file demo:
 - native shell entry point
 - multi-file kernel build
 - CI build pipeline
+- native application package model
+- X90 certificate policy foundation
+
+## Native application packages
+
+peaOS has its own native application formats:
+
+- `.pea` for standard peaOS applications
+- `.xpea` for X90-optimized native applications
+- `.peac` for compact native applications, including mixed C++ + C# applications
+
+Native applications are compiled for the peaOS/X90 ABI. Source code is not executed directly by the installer.
+
+Every native package must carry a valid peaOS certificate/signature envelope before the OS will trust it. Certificate validation is performed by the OS trust layer rather than only by the application.
+
+### Certificate Your App
+
+**Certificate Your App** is the official free signing application. Its free certificate policy is:
+
+- one certificate per company identity;
+- up to five applications bound to the certificate;
+- 90-day validity;
+- manual renewal only;
+- expired certificates stop the affected applications from launching;
+- renewal happens through the protected OS certificate service and produces a new certificate.
+
+The certificate private signing material is not embedded into application packages.
+
+### Web Distribution Program
+
+A native package distributed publicly through the internet must also be enrolled in the **peaOS Web Distribution Program**. A normal local certificate cannot be silently upgraded into web-distribution trust.
+
+If a `.pea`, `.xpea` or `.peac` package is uploaded or copied without its valid certificate/signature envelope, the installer rejects it as unsigned or invalid. A web-distributed package without valid Web Distribution enrollment is also rejected.
 
 ## Architecture target
 
@@ -48,7 +81,7 @@ The project now has a structured kernel instead of a single-file demo:
 
 ### Applications
 
-Native peaOS applications will use a stable C++ system API and application SDK.
+Native peaOS applications will use a stable C++ system API and application SDK. Certificate Your App will provide the graphical signing and renewal workflow once the user-mode application framework is online.
 
 ### Windows compatibility
 
