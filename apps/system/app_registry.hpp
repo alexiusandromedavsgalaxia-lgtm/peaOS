@@ -4,25 +4,25 @@
 namespace app_registry {
 
 enum class AppId : uint16_t {
-    Settings,
-    Photos,
-    Viewer,
-    Browser,
-    Notes,
-    PeaCloud,
-    MangaReader,
-    Development,
-    VisualStudioCode,
-    SandboxInterface
+    Settings, Files, SoftwareCenter, Terminal, TaskManager, SystemMonitor,
+    TextEditor, MediaPlayer, Photos, ImageViewer, Viewer, Browser, Notes,
+    Calendar, Clock, NetworkManager, Bluetooth, Audio, Display, UsersAccounts,
+    SecurityCenter, Permissions, Notifications, About, Help, PeaCloud,
+    MangaReader, Development, VisualStudioCode, SandboxInterface,
+    X90FusionManager, TimeMachineManager, MorphManager, CertificateYourApp,
+    WebDistribution
 };
 
 enum class Runtime : uint8_t { Native, X90Fusion, WebSandbox };
+
+enum class Category : uint8_t { System, Productivity, Media, Internet, Development, Security, X90 };
 
 struct AppDescriptor {
     AppId id;
     const char* name;
     const char* package_extension;
     Runtime runtime;
+    Category category;
     bool bundled;
     bool requires_network;
     bool isolated;
