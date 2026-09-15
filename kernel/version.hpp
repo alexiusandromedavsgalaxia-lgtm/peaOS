@@ -2,15 +2,13 @@
 
 namespace kernel_version {
 
-// Version progression: each release increments by 100.50.30.
-// Previous: v0.0.782.94.55
-// Current:  v0.0.882.144.85
+// Beta 1 release: advanced window manager, application reader, runtime and Aurora Glass UI.
 constexpr unsigned kMajor = 0;
-constexpr unsigned kMinor = 0;
-constexpr unsigned kPatch = 882;
-constexpr unsigned kBuild = 144;
-constexpr unsigned kRevision = 85;
+constexpr unsigned kMinor = 1;
+constexpr unsigned kPatch = 129;
+constexpr unsigned kBuild = 559;
+constexpr unsigned kRevision = 0;
 
-constexpr const char* kFullVersion = "v0.0.882.144.85";
+constexpr const char* kFullVersion = "v0.1.129.559";
 
 }
