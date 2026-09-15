@@ -16,10 +16,15 @@ void init() {
 }
 
 ProcessId create(uint64_t entry_point, uint8_t privilege) {
+    return create(reinterpret_cast<EntryPoint>(entry_point), privilege);
+}
+
+ProcessId create(EntryPoint entry, uint8_t privilege) {
     for (uint32_t i = 0; i < kMaxProcesses; ++i) {
         if (!g_processes[i].alive) {
-            g_processes[i] = {g_next_id++, 0, entry_point, privilege, true};
+            g_processes[i] = {g_next_id++, 0, reinterpret_cast<uint64_t>(entry), entry, privilege, true, true, 0};
             ++g_count;
+            if (g_next_id == 0) g_next_id = 1;
             return g_processes[i].id;
         }
     }
@@ -30,6 +35,7 @@ bool terminate(ProcessId id) {
     for (uint32_t i = 0; i < kMaxProcesses; ++i) {
         if (g_processes[i].alive && g_processes[i].id == id) {
             g_processes[i].alive = false;
+            g_processes[i].runnable = false;
             if (g_count) --g_count;
             if (g_current == i) g_current = 0;
             return true;
@@ -40,6 +46,7 @@ bool terminate(ProcessId id) {
 
 const Process* current() {
     if (g_count == 0) return nullptr;
+    if (!g_processes[g_current].alive) return nullptr;
     return &g_processes[g_current];
 }
 
@@ -49,11 +56,19 @@ void schedule_tick() {
     if (g_count == 0) return;
     for (uint32_t offset = 1; offset <= kMaxProcesses; ++offset) {
         const uint32_t index = (g_current + offset) % kMaxProcesses;
-        if (g_processes[index].alive) {
+        if (g_processes[index].alive && g_processes[index].runnable) {
             g_current = index;
             return;
         }
     }
+}
+
+void run_current() {
+    if (g_count == 0 || g_current >= kMaxProcesses) return;
+    Process& p = g_processes[g_current];
+    if (!p.alive || !p.runnable || !p.entry) return;
+    ++p.ticks;
+    p.entry();
 }
 
 }
