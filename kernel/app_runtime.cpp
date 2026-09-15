@@ -1,10 +1,16 @@
 #include "app_runtime.hpp"
+#include "app_ui.hpp"
 
 namespace app_runtime {
 namespace {
 Process g_processes[kMaxProcesses]{};
 uint32_t g_count = 0;
 uint32_t g_next_pid = 1;
+
+void application_entry() {
+    // Entry point owned by the native application runtime. The scheduler/process
+    // layer owns execution; application UI is driven by app_ui::tick().
+}
 
 Process* find(app_registry::AppId id) {
     for (uint32_t i = 0; i < g_count; ++i)
@@ -29,13 +35,18 @@ Result start(app_registry::AppId id, bool network_available) {
         app->runtime != app_registry::Runtime::WebSandbox) return Result::UnsupportedRuntime;
     if (g_count >= kMaxProcesses) return Result::LimitReached;
 
+    const uint64_t entry = reinterpret_cast<uint64_t>(&application_entry);
+    const process::ProcessId kernel_pid = process::create(entry, app->isolated ? 3 : 2);
+    if (!kernel_pid) return Result::ProcessCreateFailed;
+
     Process& p = g_processes[g_count];
-    p = {g_next_pid++, id, app->runtime, State::Starting,
+    p = {g_next_pid++, kernel_pid, id, app->runtime, State::Starting,
          static_cast<uint8_t>(app->isolated ? 180 : 128),
          app->isolated ? 65536u : 32768u,
-         app->isolated, app->requires_network, 0};
+         app->isolated, app->requires_network, entry, 0};
     if (g_next_pid == 0) g_next_pid = 1;
     p.state = State::Running;
+    app_ui::open(id);
     ++g_count;
     return Result::Ok;
 }
@@ -43,6 +54,8 @@ Result start(app_registry::AppId id, bool network_available) {
 Result stop(app_registry::AppId id) {
     Process* p = find(id);
     if (!p) return Result::NotInstalled;
+    process::terminate(p->kernel_pid);
+    app_ui::close(id);
     const uint32_t index = static_cast<uint32_t>(p - g_processes);
     const uint32_t last = g_count - 1;
     if (index != last) g_processes[index] = g_processes[last];
@@ -68,8 +81,10 @@ Result resume(app_registry::AppId id) {
 }
 
 void tick(uint64_t ticks) {
+    process::schedule_tick();
     for (uint32_t i = 0; i < g_count; ++i)
         if (g_processes[i].state == State::Running) g_processes[i].ticks += ticks;
+    app_ui::tick(ticks);
 }
 
 const Process* processes(uint32_t* count) {
