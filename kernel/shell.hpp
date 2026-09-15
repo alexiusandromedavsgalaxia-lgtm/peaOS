@@ -1,2 +1,7 @@
 #pragma once
-namespace shell { void run(); }
+
+namespace shell {
+
+void run();
+
+}
