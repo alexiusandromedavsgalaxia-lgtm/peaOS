@@ -12,27 +12,18 @@ void init() {
 
 bool request(uint64_t app_id, Capability capability) {
     if (app_id == 0) return false;
-    const uint32_t mask = bit(capability);
-    for (uint32_t i = 0; i < kMaxGrants; ++i) {
-        if (g_grants[i].app_id == app_id) {
-            g_grants[i].capabilities |= mask;
-            return true;
-        }
-    }
-    for (uint32_t i = 0; i < kMaxGrants; ++i) {
-        if (g_grants[i].app_id == 0) {
-            g_grants[i] = {app_id, mask};
-            return true;
-        }
-    }
-    return false;
+    // Requesting a capability must never grant it.  This is the privileged
+    // policy boundary: callers can only observe an already-approved grant.
+    return allowed(app_id, capability);
 }
 
 bool revoke(uint64_t app_id, Capability capability) {
+    if (app_id == 0) return false;
     const uint32_t mask = bit(capability);
     for (uint32_t i = 0; i < kMaxGrants; ++i) {
         if (g_grants[i].app_id == app_id) {
             g_grants[i].capabilities &= ~mask;
+            if (g_grants[i].capabilities == 0) g_grants[i].app_id = 0;
             return true;
         }
     }
@@ -40,11 +31,11 @@ bool revoke(uint64_t app_id, Capability capability) {
 }
 
 bool allowed(uint64_t app_id, Capability capability) {
+    if (app_id == 0) return false;
     const uint32_t mask = bit(capability);
-    for (uint32_t i = 0; i < kMaxGrants; ++i) {
+    for (uint32_t i = 0; i < kMaxGrants; ++i)
         if (g_grants[i].app_id == app_id)
             return (g_grants[i].capabilities & mask) != 0;
-    }
     return false;
 }
 
