@@ -30,7 +30,8 @@ _start:
     or eax, 1 << 8
     wrmsr
 
-    ; Install the identity map for the first 2 MiB.
+    ; Map the first 1 GiB with 2 MiB pages.  The previous bootstrap only
+    ; mapped 2 MiB, so a larger kernel could execute into an unmapped page.
     mov eax, page_table_l4
     mov cr3, eax
 
@@ -86,8 +87,11 @@ page_table_pdpt:
     dq page_table_pd + 0x003
     times 511 dq 0
 page_table_pd:
-    dq 0x0000000000000083
-    times 511 dq 0
+%assign page_index 0
+%rep 512
+    dq (page_index * 0x200000) + 0x083
+%assign page_index page_index + 1
+%endrep
 
 align 16
 stack_bottom:
