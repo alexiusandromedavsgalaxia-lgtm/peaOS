@@ -2,6 +2,7 @@
 
 namespace hardware_probe {
 namespace {
+constexpr uint32_t kMultibootMagic = 0x2BADB002u;
 
 static void copy_vendor(char* out, uint32_t ebx, uint32_t edx, uint32_t ecx) {
     out[0] = static_cast<char>(ebx);
@@ -35,10 +36,10 @@ static bool cpuid_supported() {
 }
 }
 
-Result probe(uint64_t multiboot_info) {
+Result probe(uint64_t multiboot_magic, uint64_t multiboot_info) {
     Result r{};
     r.profile.cpu_supported = false;
-    r.profile.firmware_valid = multiboot_info != 0;
+    r.profile.firmware_valid = multiboot_magic == kMultibootMagic;
     r.profile.storage_valid = false;
     r.profile.has_graphics = true;
     r.profile.has_dedicated_gpu = false;
@@ -69,8 +70,9 @@ Result probe(uint64_t multiboot_info) {
 #endif
     }
 
-    // Multiboot1 info: mem_lower at +4 and mem_upper at +8, both KiB.
-    if (multiboot_info != 0) {
+    // Only dereference the Multiboot structure when GRUB supplied the
+    // expected Multiboot1 magic and a non-null pointer.
+    if (r.profile.firmware_valid && multiboot_info != 0) {
         const uint32_t* info = reinterpret_cast<const uint32_t*>(multiboot_info);
         const uint64_t lower = static_cast<uint64_t>(info[1]) * 1024ull;
         const uint64_t upper = static_cast<uint64_t>(info[2]) * 1024ull;
