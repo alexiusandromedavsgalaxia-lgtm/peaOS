@@ -1,5 +1,12 @@
 #include "shell.hpp"
 #include "console.hpp"
+#include "memory.hpp"
+#include "process.hpp"
+#include "thread.hpp"
+#include "activation.hpp"
+#include "initial_setup.hpp"
+#include "x90_features.hpp"
+#include "hardware_probe.hpp"
 #include <stdint.h>
 
 namespace shell {
@@ -45,6 +52,48 @@ void execute(const char* command) {
         console::write_line("peaOS 1 Beta 1 | X90 x86_64 | 64-bit");
     } else if (equal(command, "clear")) {
         console::clear();
+    } else if (equal(command, "mem")) {
+        console::write("Heap bytes used: ");
+        console::write_uint(memory::bytes_used());
+        console::put('\n');
+    } else if (equal(command, "cpu")) {
+        const hardware_probe::Result r = hardware_probe::probe(0);
+        console::write_line(r.cpuid_available ? "CPUID: OK" : "CPUID: unavailable");
+        console::write_line(r.long_mode_available ? "Long mode: OK" : "Long mode: unknown");
+        console::write_line(r.profile.cpu_supported ? "CPU baseline: supported" : "CPU baseline: unsupported");
+    } else if (equal(command, "processes")) {
+        console::write("Processes: ");
+        console::write_uint(process::count());
+        console::put('\n');
+    } else if (equal(command, "threads")) {
+        console::write("Threads: ");
+        console::write_uint(thread::count());
+        console::put('\n');
+    } else if (equal(command, "activation")) {
+        const activation::State state = activation::state();
+        if (state == activation::State::Unactivated) console::write_line("Activation: unactivated");
+        else if (state == activation::State::Activating) console::write_line("Activation: activating");
+        else if (state == activation::State::Active) console::write_line("Activation: active");
+        else if (state == activation::State::OfflineGrace) console::write_line("Activation: offline grace");
+        else if (state == activation::State::Revoked) console::write_line("Activation: revoked");
+        else console::write_line("Activation: failed");
+    } else if (equal(command, "setup")) {
+        console::write("Initial Setup: ");
+        console::write_line(initial_setup::title());
+        console::write_line(initial_setup::status_line());
+    } else if (equal(command, "morph")) {
+        const x90_features::MorphState& state = x90_features::morph_state();
+        console::write("Morph: ");
+        console::write(state.name);
+        console::write(" / ");
+        console::write_line(state.mode);
+    } else if (equal(command, "snapshot")) {
+        console::write("Snapshot ID: ");
+        console::write_uint(x90_features::filesystem_snapshot().id);
+        console::put('\n');
+    } else if (equal(command, "fusion")) {
+        console::write("Fusion: ");
+        console::write_line(x90_features::fusion_runtime().name);
     } else if (begins(command, "echo ")) {
         console::write_line(command + 5);
     } else {
