@@ -20,9 +20,7 @@ enum class InstallState : uint8_t {
 };
 
 struct CertificateRecord {
-    uint64_t serial;
-    uint8_t certificate_id[16];
-    uint8_t distribution;
+    certificate::Certificate certificate;
     InstallState state;
     bool installed;
     bool server_active;
