@@ -1,21 +1,20 @@
 #pragma once
 
+#include <stdint.h>
+
 namespace x90_features {
 
-// X90 Morph: desktop state/context model.
 struct MorphState {
     const char* name;
     const char* mode;
 };
 
-// TimeMachine FS: versioned filesystem boundary.
 struct Snapshot {
-    unsigned long long id;
-    unsigned long long timestamp;
+    uint64_t id;
+    uint64_t timestamp;
 };
 
-// X90 Fusion: unified application/runtime boundary.
-enum class RuntimeKind {
+enum class RuntimeKind : uint8_t {
     Native,
     WindowsPE,
     AndroidAPK,
@@ -25,11 +24,19 @@ enum class RuntimeKind {
 struct AppRuntime {
     RuntimeKind kind;
     const char* name;
+    bool sandboxed;
+    bool running;
 };
 
 void init();
+
 const MorphState& morph_state();
+bool set_morph(const char* name, const char* mode);
+
 const Snapshot& filesystem_snapshot();
+bool create_snapshot(uint64_t id, uint64_t timestamp);
+
 const AppRuntime& fusion_runtime();
+bool select_runtime(RuntimeKind kind, const char* name);
 
 }
