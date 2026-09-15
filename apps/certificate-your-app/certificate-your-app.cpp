@@ -25,11 +25,11 @@ RenewalResult renew_manually(const char* certificate_id, uint64_t now) {
     RenewalResult result{};
     if (!certificate_id || !*certificate_id || now == 0) return result;
 
-    // The actual protected signing service will replace this policy-only
-    // implementation once user mode, persistent storage and crypto are online.
-    result.success = true;
+    // Fail closed until the protected OS certificate service has persistent
+    // key storage and real signature generation/verification.
+    result.success = false;
     result.applications_bound = 0;
-    result.expires_at = now + kValiditySeconds;
+    result.expires_at = 0;
     return result;
 }
 
