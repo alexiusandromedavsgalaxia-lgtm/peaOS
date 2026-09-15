@@ -3,16 +3,16 @@
 namespace app_registry {
 namespace {
 constexpr AppDescriptor kApps[] = {
-    {AppId::Settings, "Settings", ".pea", true, false, false},
-    {AppId::Photos, "Photos", ".pea", true, false, false},
-    {AppId::Viewer, "Viewer", ".pea", true, false, false},
-    {AppId::Browser, "Web Browser", ".pea", true, true, true},
-    {AppId::Notes, "Notes", ".pea", true, false, false},
-    {AppId::PeaCloud, "peaCloud", ".pea", true, true, true},
-    {AppId::MangaReader, "Manga Reader", ".pea", true, true, true},
-    {AppId::Development, "Development", ".pea", true, true, true},
-    {AppId::VisualStudioCode, "Visual Studio Code", ".pea", true, true, true},
-    {AppId::SandboxInterface, "Sandbox Interface", ".pea", true, false, true}
+    {AppId::Settings, "Settings", ".pea", Runtime::Native, true, false, false},
+    {AppId::Photos, "Photos", ".pea", Runtime::Native, true, false, false},
+    {AppId::Viewer, "Viewer", ".pea", Runtime::Native, true, false, false},
+    {AppId::Browser, "Web Browser", ".pea", Runtime::X90Fusion, true, true, true},
+    {AppId::Notes, "Notes", ".pea", Runtime::Native, true, false, false},
+    {AppId::PeaCloud, "peaCloud", ".pea", Runtime::Native, true, true, true},
+    {AppId::MangaReader, "Manga Reader", ".pea", Runtime::Native, true, true, true},
+    {AppId::Development, "Development", ".pea", Runtime::Native, true, false, true},
+    {AppId::VisualStudioCode, "Visual Studio Code", ".pea", Runtime::X90Fusion, true, false, true},
+    {AppId::SandboxInterface, "Sandbox Interface", ".pea", Runtime::X90Fusion, true, false, true}
 };
 
 bool same(const char* a, const char* b) {
@@ -38,5 +38,9 @@ const AppDescriptor* find_by_name(const char* name) {
         if (same(app.name, name)) return &app;
     return nullptr;
 }
+
+bool is_bundled(AppId id) { const AppDescriptor* app = find(id); return app && app->bundled; }
+bool requires_network(AppId id) { const AppDescriptor* app = find(id); return app && app->requires_network; }
+bool is_isolated(AppId id) { const AppDescriptor* app = find(id); return app && app->isolated; }
 
 }
