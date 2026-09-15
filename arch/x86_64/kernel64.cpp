@@ -9,6 +9,7 @@
 #include "kernel/process.hpp"
 #include "kernel/thread.hpp"
 #include "kernel/syscall.hpp"
+#include "kernel/shell.hpp"
 
 extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::clear();
@@ -51,5 +52,6 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write_line("Bootstrap heap: online");
 
     (void)syscall_api::kAbiVersion;
-    for (;;) asm volatile("hlt");
+    asm volatile("sti");
+    shell::run();
 }
