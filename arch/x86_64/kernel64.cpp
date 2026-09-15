@@ -5,6 +5,10 @@
 #include "kernel/initial_setup.hpp"
 #include "kernel/hardware_probe.hpp"
 #include "kernel/activation.hpp"
+#include "kernel/permissions.hpp"
+#include "kernel/process.hpp"
+#include "kernel/thread.hpp"
+#include "kernel/syscall.hpp"
 
 extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::clear();
@@ -22,6 +26,9 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     x90_features::init();
     activation::init();
     initial_setup::init();
+    permissions::init();
+    process::init();
+    thread::init();
 
     const hardware_probe::Result hardware = hardware_probe::probe(multiboot_info);
     console::write_line(hardware.cpuid_available ? "CPUID: OK" : "CPUID: unavailable");
@@ -34,10 +41,15 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write_line("Initial Setup: privileged system service online");
     console::write_line("First boot: activation is part of Initial Setup");
     console::write_line("Activation state: unactivated (fail-closed until online verification)");
+    console::write_line("Permissions: default-deny policy online");
+    console::write_line("Process manager: online");
+    console::write_line("Thread scheduler: online");
+    console::write_line("X90 syscall ABI: online");
     console::write_line("X90 Morph: ready");
     console::write_line("X90 filesystem snapshots: ready");
     console::write_line("X90 Fusion: ready");
     console::write_line("Bootstrap heap: online");
 
+    (void)syscall_api::kAbiVersion;
     for (;;) asm volatile("hlt");
 }
