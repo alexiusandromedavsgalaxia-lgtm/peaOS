@@ -4,24 +4,43 @@ peaOS is being built as a complete desktop operating system, primarily in freest
 
 ## CPU architecture: X90
 
-**X90** is peaOS's name for its native **64-bit x86_64 platform target**. From this point forward, the 64-bit kernel, boot image, build target and platform-specific code are identified as X90.
-
-X90 is not a second CPU architecture. It is peaOS's platform/architecture name for its x86_64 system target.
+**X90** is peaOS's name for its native **64-bit x86_64 platform target**. X90 is not a second CPU architecture. It is the platform/architecture name for the native peaOS system target.
 
 ## Current foundation
 
-The project now has a structured kernel instead of a single-file demo:
+The project now has a structured kernel rather than a single-file demo:
 
 - Multiboot/GRUB boot path
 - X90 x86_64 long-mode entry
 - 64-bit C++ kernel entry
-- VGA console with scrolling
+- VGA console with COM1 serial mirroring
 - bootstrap heap allocator
 - native shell entry point
 - multi-file kernel build
-- CI build pipeline
+- CI build pipeline with boot-marker validation
+- X90 CPUID and Multiboot memory probing
+- minimum hardware policy: 2 GB RAM and 64 GB storage, with integrated graphics accepted
+- privileged Initial Setup flow
+- fail-closed activation service foundation
 - native application package model
 - X90 certificate policy foundation
+- Development target model for peaOS, Windows, Android and macOS
+
+## Initial Setup and activation
+
+Activation is **not an installable application**. It is a privileged first-boot system flow.
+
+The intended setup sequence is:
+
+1. language;
+2. region;
+3. network;
+4. hardware verification;
+5. peaOS activation;
+6. account and security;
+7. desktop preparation.
+
+The OS must not silently treat an unverified activation as active. The current bootstrap implementation is fail-closed until the real network protocol, cryptographic verification, persistent device identity and storage drivers exist.
 
 ## Native application packages
 
@@ -37,22 +56,39 @@ Every native package must carry a valid peaOS certificate/signature envelope bef
 
 ### Certificate Your App
 
-**Certificate Your App** is the official free signing application. Its free certificate policy is:
+**Certificate Your App** is the official free certificate-management application. The intended free certificate policy is:
 
 - one certificate per company identity;
 - up to five applications bound to the certificate;
 - 90-day validity;
 - manual renewal only;
-- expired certificates stop the affected applications from launching;
-- renewal happens through the protected OS certificate service and produces a new certificate.
+- expired certificates stop affected applications from launching;
+- renewal happens through the protected OS certificate service.
 
-The certificate private signing material is not embedded into application packages.
+The current app implementation deliberately fails closed because real key storage and signature generation are not implemented yet.
 
 ### Web Distribution Program
 
-A native package distributed publicly through the internet must also be enrolled in the **peaOS Web Distribution Program**. A normal local certificate cannot be silently upgraded into web-distribution trust.
+A native package distributed publicly through the internet must also be enrolled in the **peaOS Web Distribution Program**. A local certificate cannot simply be promoted into web-distribution trust.
 
-If a `.pea`, `.xpea` or `.peac` package is uploaded or copied without its valid certificate/signature envelope, the installer rejects it as unsigned or invalid. A web-distributed package without valid Web Distribution enrollment is also rejected.
+If a `.pea`, `.xpea` or `.peac` package is modified, unsigned, or distributed from an unauthorized web origin, the eventual installer/trust service rejects it.
+
+## Development
+
+The **Development** application is the unified development environment:
+
+- peaOS → `.pea`, `.xpea`, `.peac`
+- Windows → PE/Win32 `.exe`/`.dll`
+- Android → APK/AAB
+- macOS → source editing and remote compilation through a physically connected Mac
+
+macOS development requires a Mac connected over USB-C **and Xcode already open**. peaOS does not redistribute or execute Xcode locally. Project files are synchronized over the cable, build instructions are sent to the Mac, Xcode builds with Apple's own toolchain, and the resulting artifact returns to Development.
+
+## X90 features
+
+- **X90 Morph**: context-aware desktop layouts with saved Morph states.
+- **X90 TimeMachine FS**: temporal filesystem snapshots/version history.
+- **X90 Fusion**: unified runtime boundary for native peaOS, Windows PE/Win32, Android APK and compatible macOS workloads, with shared integration services where technically possible.
 
 ## Architecture target
 
@@ -79,24 +115,24 @@ If a `.pea`, `.xpea` or `.peac` package is uploaded or copied without its valid 
 - application launcher
 - package manager and installer
 
-### Applications
+### System applications
 
-Native peaOS applications will use a stable C++ system API and application SDK. Certificate Your App will provide the graphical signing and renewal workflow once the user-mode application framework is online.
+The system application catalog is tracked in `apps/system-apps.manifest`. Initial Setup remains outside that catalog because it is part of the privileged boot flow.
 
 ### Windows compatibility
 
-A dedicated PE/Win32 compatibility subsystem is planned, with Windows API translation, executable loading, filesystem integration, graphics/input bridges and sandboxing. A Wine-style userspace can be integrated rather than pretending that Windows binaries are native ELF programs.
+A dedicated PE/Win32 compatibility subsystem is planned, with Windows API translation, executable loading, filesystem integration, graphics/input bridges and sandboxing. Windows binaries are not treated as native X90 ELF programs.
 
 ### Android compatibility
 
-APK discovery, package metadata, application sandboxing and an Android runtime/container layer are planned. The design separates the Android application ABI from the peaOS kernel so Android applications can run without polluting the native process model.
+APK discovery, package metadata, application sandboxing and an Android runtime/container layer are planned. The Android application ABI remains separate from the peaOS kernel process model.
 
 ### macOS compatibility
 
-Portable application formats can be supported where their dependencies are implementable. Software requiring Apple's proprietary frameworks, signing infrastructure or Apple hardware cannot simply be copied into peaOS. For those workloads, the architecture reserves a virtualization boundary instead of claiming impossible native compatibility.
+Portable application formats can be supported where their dependencies are implementable. Software requiring Apple's proprietary frameworks, signing infrastructure or Apple hardware cannot simply be copied into peaOS. Those workloads use an explicit virtualization/remote-build boundary instead of fake native compatibility.
 
 ## Development rule
 
 A subsystem is not considered complete because its directory exists. It must compile, have a defined interface, and have a test or boot-time validation before being promoted.
 
-The end goal is a real desktop OS that boots on physical PCs and presents native, Windows and Android applications through one integrated desktop, with macOS compatibility handled through technically and legally valid mechanisms.
+The end goal is a real desktop OS that boots on physical PCs and presents native, Windows and Android applications through one integrated desktop, with macOS workloads handled through technically valid boundaries.
