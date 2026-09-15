@@ -4,16 +4,13 @@
 namespace desktop {
 
 enum class App : uint8_t {
-    Settings,
-    Photos,
-    Viewer,
-    Browser,
-    Notes,
-    PeaCloud,
-    MangaReader,
-    Development,
-    VisualStudioCode,
-    SandboxInterface
+    Settings, Files, SoftwareCenter, Terminal, TaskManager, SystemMonitor,
+    TextEditor, MediaPlayer, Photos, ImageViewer, Viewer, Browser, Notes,
+    Calendar, Clock, NetworkManager, Bluetooth, Audio, Display, UsersAccounts,
+    SecurityCenter, Permissions, Notifications, About, Help, PeaCloud,
+    MangaReader, Development, VisualStudioCode, SandboxInterface,
+    X90FusionManager, TimeMachineManager, MorphManager, CertificateYourApp,
+    WebDistribution
 };
 
 struct Window {
