@@ -12,6 +12,7 @@ struct Result {
     char vendor[13];
 };
 
-Result probe(uint64_t multiboot_info);
+// The Multiboot magic is required before the info pointer is dereferenced.
+Result probe(uint64_t multiboot_magic, uint64_t multiboot_info);
 
 }
