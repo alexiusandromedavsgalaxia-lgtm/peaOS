@@ -65,9 +65,9 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write_line(hardware.profile.cpu_supported ? "CPU baseline: supported" : "CPU baseline: unsupported");
     console::write_line(hardware.profile.ram_bytes >= hardware::kMinimumRamBytes ? "RAM minimum: OK" : "RAM minimum: FAIL");
     console::write("PCI devices: "); console::write_uint(pci_count); console::put('\n');
-    console::write("Supported Ethernet adapters: "); console::write_uint(net_count); console::put('\n');
-    console::write_line("Bluetooth HCI registry: online");
-    console::write_line("USB device model: online");
+    console::write("Supported Ethernet adapters (probe only): "); console::write_uint(net_count); console::put('\n');
+    console::write_line("Bluetooth adapter registry: initialized (no HCI transport yet)");
+    console::write_line("USB device model: initialized (no controller transport yet)");
     console::write_line("Storage: VFS bootstrap online");
     console::write_line("Desktop: window manager state online");
     console::write("Interface: ");
@@ -75,17 +75,17 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write_line("Application surfaces: per-app state and event routing online");
     console::write_line("Firmware validation: bootstrap profile");
 
-    console::write_line("Initial Setup: privileged system service online");
+    console::write_line("Initial Setup: state machine initialized");
     console::write_line("First boot: activation is part of Initial Setup");
     console::write_line("Activation state: unactivated (fail-closed until online verification)");
     console::write_line("Permissions: default-deny policy online");
-    console::write_line("Process manager: kernel-backed process table online");
-    console::write_line("Thread scheduler: online");
-    console::write_line("X90 syscall ABI: online");
-    console::write_line("X90 Morph: ready");
-    console::write_line("X90 filesystem snapshots: ready");
-    console::write_line("X90 Fusion: ready");
-    console::write_line("Bundled apps: complete default suite registered");
+    console::write_line("Process manager: kernel-backed scheduling metadata online");
+    console::write_line("Thread manager: state registry initialized");
+    console::write_line("X90 syscall ABI: definitions loaded (dispatcher isolation pending)");
+    console::write_line("X90 Morph: state manager initialized");
+    console::write_line("X90 filesystem snapshots: metadata manager initialized");
+    console::write_line("X90 Fusion: runtime registry initialized");
+    console::write_line("Bundled apps: default suite registered");
     console::write_line("Application manager: online");
     console::write_line("Bootstrap heap: online");
 
