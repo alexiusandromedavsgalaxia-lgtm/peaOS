@@ -7,15 +7,17 @@ static uint32_t g_count = 0;
 
 bool add(uint16_t vendor, uint16_t device, uint32_t id) {
     if (g_count >= drivers::network::kMaxInterfaces) return false;
-    drivers::network::Interface& n = g_interfaces[g_count++];
-    n.id = id; n.medium = drivers::network::Medium::Ethernet;
-    n.link = drivers::network::Link::Unknown; n.mtu = 1500;
-    n.ipv4 = false; n.ipv6 = false; n.dhcp = false; n.dns = false; n.active = false;
-    for (uint32_t i = 0; i < 6; ++i) n.mac[i] = 0;
+    drivers::network::Interface& n = g_interfaces[g_count];
+    n = {};
+    n.id = id;
+    n.medium = drivers::network::Medium::Ethernet;
+    n.link = drivers::network::Link::Unknown;
+    n.mtu = 1500;
     if (vendor == 0x10EC && device == 0x8139) n.driver = drivers::network::DriverKind::RTL8139;
     else if (vendor == 0x8086 && (device == 0x100E || device == 0x100F || device == 0x10D3 || device == 0x1533)) n.driver = drivers::network::DriverKind::IntelE1000;
     else if (vendor == 0x1AF4 && device >= 0x1000 && device <= 0x107F) n.driver = drivers::network::DriverKind::VirtioNet;
     else return false;
+    ++g_count;
     return true;
 }
 }
@@ -26,7 +28,8 @@ void init() { g_count = 0; for (auto& n : g_interfaces) n = {}; }
 
 uint32_t probe_pci() {
     g_count = 0;
-    uint32_t pc = 0; const pci::Device* devices = pci::devices(&pc);
+    uint32_t pc = 0;
+    const pci::Device* devices = pci::devices(&pc);
     for (uint32_t i = 0; i < pc; ++i) {
         if (devices[i].class_code != 0x02) continue;
         add(devices[i].vendor, devices[i].device, i + 1);
@@ -39,11 +42,34 @@ const Interface* interface_for(uint32_t id) { for (uint32_t i = 0; i < g_count; 
 uint32_t count() { return g_count; }
 
 bool bring_up(uint32_t id) {
-    for (uint32_t i = 0; i < g_count; ++i) if (g_interfaces[i].id == id) { g_interfaces[i].active = true; g_interfaces[i].link = Link::Unknown; return true; }
+    // Probe-only drivers cannot honestly report a link until controller registers,
+    // DMA and link negotiation are implemented. Keep the interface inactive.
+    for (uint32_t i = 0; i < g_count; ++i) {
+        if (g_interfaces[i].id != id) continue;
+        if (g_interfaces[i].driver == DriverKind::None) return false;
+        g_interfaces[i].active = false;
+        g_interfaces[i].link = Link::Unknown;
+        return false;
+    }
     return false;
 }
+
 bool bring_down(uint32_t id) {
-    for (uint32_t i = 0; i < g_count; ++i) if (g_interfaces[i].id == id) { g_interfaces[i].active = false; g_interfaces[i].link = Link::Down; return true; }
+    for (uint32_t i = 0; i < g_count; ++i) if (g_interfaces[i].id == id) {
+        g_interfaces[i].active = false;
+        g_interfaces[i].link = Link::Down;
+        g_interfaces[i].ipv4 = false;
+        g_interfaces[i].ipv6 = false;
+        g_interfaces[i].dhcp = false;
+        g_interfaces[i].dns = false;
+        return true;
+    }
+    return false;
+}
+
+bool available() {
+    for (uint32_t i = 0; i < g_count; ++i)
+        if (g_interfaces[i].active && g_interfaces[i].link == Link::Up) return true;
     return false;
 }
 
