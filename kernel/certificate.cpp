@@ -20,7 +20,7 @@ Status validate(const Certificate* cert,uint64_t now,uint8_t app_count,Distribut
     return Status::Valid;
 }
 Status validate_server(const Certificate* cert,const ServerValidation& server,const uint8_t* expected_origin_hash,const uint8_t* package_hash){
-    if(!cert)return Status::Invalid;
+    if(!cert||cert->magic!=kMagic||cert->version!=kVersion)return Status::Invalid;
     if(!server.reachable)return Status::ServerUnavailable;
     if(server.revoked||!server.active)return Status::NotActiveOnServer;
     if(!server.signature_valid)return Status::SignatureInvalid;
