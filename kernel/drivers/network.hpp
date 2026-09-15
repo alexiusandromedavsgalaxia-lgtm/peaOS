@@ -30,6 +30,8 @@ const Interface* interface_for(uint32_t id);
 uint32_t count();
 bool bring_up(uint32_t id);
 bool bring_down(uint32_t id);
+// True only when a probed interface is administratively active and reports a real link.
+bool available();
 const char* driver_name(DriverKind driver);
 const char* medium_name(Medium medium);
 const char* link_name(Link link);
