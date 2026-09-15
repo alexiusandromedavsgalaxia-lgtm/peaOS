@@ -66,6 +66,8 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
 
     ui::render_home();
     (void)syscall_api::kAbiVersion;
-    asm volatile("sti");
+    // Interrupts remain disabled until an IDT/PIC path exists.  Enabling STI
+    // here with no installed interrupt handlers could turn keyboard activity
+    // into an immediate triple fault.
     shell::run();
 }
