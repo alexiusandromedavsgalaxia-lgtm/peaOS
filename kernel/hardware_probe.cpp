@@ -24,7 +24,7 @@ static bool cpuid_supported() {
     uint64_t before = 0;
     uint64_t after = 0;
     asm volatile("pushfq; popq %0" : "=r"(before));
-    uint64_t toggled = before ^ (1ull << 21);
+    const uint64_t toggled = before ^ (1ull << 21);
     asm volatile("pushq %0; popfq" :: "r"(toggled) : "cc");
     asm volatile("pushfq; popq %0" : "=r"(after));
     asm volatile("pushq %0; popfq" :: "r"(before) : "cc");
@@ -46,18 +46,23 @@ Result probe(uint64_t multiboot_info) {
     r.cpuid_available = cpuid_supported();
     if (r.cpuid_available) {
 #if defined(__x86_64__)
-        uint32_t eax = 0, ebx = 0, ecx = 0, edx = 0;
-        asm volatile("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(0));
-        if (eax >= 1) {
-            uint32_t a = 0;
-            asm volatile("cpuid" : "=a"(a), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(1));
+        uint32_t max_basic = 0;
+        uint32_t vendor_ebx = 0, vendor_ecx = 0, vendor_edx = 0;
+        asm volatile("cpuid" : "=a"(max_basic), "=b"(vendor_ebx), "=c"(vendor_ecx), "=d"(vendor_edx) : "a"(0));
+        copy_vendor(r.vendor, vendor_ebx, vendor_edx, vendor_ecx);
+
+        if (max_basic >= 1) {
+            uint32_t eax = 0, ebx = 0, ecx = 0, edx = 0;
+            asm volatile("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(1));
             r.profile.logical_cpus = (ebx >> 16) & 0xffu;
             r.profile.cpu_supported = true;
         }
-        copy_vendor(r.vendor, ebx, edx, ecx);
+
         uint32_t max_ext = 0;
+        uint32_t ebx = 0, ecx = 0, edx = 0;
         asm volatile("cpuid" : "=a"(max_ext), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(0x80000000u));
         if (max_ext >= 0x80000001u) {
+            uint32_t eax = 0;
             asm volatile("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(0x80000001u));
             r.long_mode_available = (edx & (1u << 29)) != 0;
         }
