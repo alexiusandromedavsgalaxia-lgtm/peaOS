@@ -14,7 +14,9 @@
 #include "kernel/vfs.hpp"
 #include "kernel/desktop.hpp"
 #include "kernel/ui.hpp"
+#include "kernel/app_ui.hpp"
 #include "kernel/app_manager.hpp"
+#include "kernel/app_runtime.hpp"
 #include "kernel/drivers/driver.hpp"
 #include "kernel/drivers/pci.hpp"
 #include "kernel/drivers/network.hpp"
@@ -53,6 +55,8 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     vfs::init();
     desktop::init(1024, 768);
     ui::init(1024, 768);
+    app_ui::init(1024, 768);
+    app_runtime::init();
     app_manager::init();
 
     const hardware_probe::Result hardware = hardware_probe::probe(magic, multiboot_info);
@@ -68,13 +72,14 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write_line("Desktop: window manager state online");
     console::write("Interface: ");
     console::write_line(ui::style_name());
+    console::write_line("Application surfaces: per-app state and event routing online");
     console::write_line("Firmware validation: bootstrap profile");
 
     console::write_line("Initial Setup: privileged system service online");
     console::write_line("First boot: activation is part of Initial Setup");
     console::write_line("Activation state: unactivated (fail-closed until online verification)");
     console::write_line("Permissions: default-deny policy online");
-    console::write_line("Process manager: online");
+    console::write_line("Process manager: kernel-backed process table online");
     console::write_line("Thread scheduler: online");
     console::write_line("X90 syscall ABI: online");
     console::write_line("X90 Morph: ready");
@@ -86,6 +91,5 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
 
     ui::render_home();
     (void)syscall_api::kAbiVersion;
-    // Interrupts remain disabled until an IDT/PIC path exists.
     shell::run();
 }
