@@ -53,6 +53,24 @@ bool next_line(const char* text, uint32_t length, uint32_t* pos, const char** li
     return true;
 }
 
+bool value(const char* manifest, uint32_t length, const char* wanted, char* out, uint32_t out_size) {
+    if (!manifest || !wanted || !out || !out_size) return false;
+    uint32_t pos = 0;
+    while (pos < length) {
+        const char* line = nullptr;
+        uint32_t line_length = 0;
+        if (!next_line(manifest, length, &pos, &line, &line_length)) break;
+        if (!line_length) continue;
+        char bounded[256]{};
+        const uint32_t n = line_length < sizeof(bounded) - 1 ? line_length : sizeof(bounded) - 1;
+        for (uint32_t i = 0; i < n; ++i) bounded[i] = line[i];
+        bounded[n] = 0;
+        if (key_value(bounded, wanted, out, out_size)) return true;
+    }
+    out[0] = 0;
+    return false;
+}
+
 app_registry::Runtime runtime_from(const char* s) {
     if (eq(s, "x90") || eq(s, "fusion") || eq(s, "x90-fusion")) return app_registry::Runtime::X90Fusion;
     if (eq(s, "web") || eq(s, "web-sandbox")) return app_registry::Runtime::WebSandbox;
@@ -90,22 +108,21 @@ uint32_t parse(const char* manifest, uint32_t length) {
         if (!line_length) continue;
         const char* p = trim_left(line);
         if (!*p || *p == '#' || *p == ';' || *p == '[') continue;
-
         uint32_t eq_pos = 0;
         while (eq_pos < line_length && line[eq_pos] != '=') ++eq_pos;
         if (eq_pos == 0 || eq_pos >= line_length) continue;
-
         char key[48]{};
-        char value[128]{};
+        char value_text[128]{};
         uint32_t key_copy = eq_pos < sizeof(key) ? eq_pos : sizeof(key) - 1;
         for (uint32_t i = 0; i < key_copy; ++i) key[i] = line[i];
         key[key_copy] = 0;
         trim_copy(g_names[g_count], key, sizeof(g_names[g_count]));
         if (!supported_key(g_names[g_count])) continue;
-        trim_copy(value, line + eq_pos + 1, sizeof(value));
-        if (!value[0]) continue;
-        for (uint32_t i = 0; i + 1 < sizeof(g_values[g_count]) && value[i]; ++i) g_values[g_count][i] = value[i];
-        g_values[g_count][sizeof(g_values[g_count]) - 1] = 0;
+        trim_copy(value_text, line + eq_pos + 1, sizeof(value_text));
+        if (!value_text[0]) continue;
+        uint32_t i = 0;
+        while (i + 1 < sizeof(g_values[g_count]) && value_text[i]) { g_values[g_count][i] = value_text[i]; ++i; }
+        g_values[g_count][i] = 0;
         g_entries[g_count] = {g_names[g_count], runtime_from(g_values[g_count]), is_native_package(g_values[g_count]), is_supported_package(g_values[g_count])};
         ++g_count;
     }
@@ -144,13 +161,13 @@ const Entry* find(const char* name) {
 
 const char* extension_for(const char* path) {
     if (!path || !*path) return "";
-    const char* slash = path;
+    const char* basename = path;
     const char* dot = nullptr;
     for (const char* p = path; *p; ++p) {
-        if (*p == '/' || *p == '\\') slash = p + 1;
+        if (*p == '/' || *p == '\\') { basename = p + 1; dot = nullptr; }
         else if (*p == '.') dot = p;
     }
-    return dot && dot >= slash && dot[1] ? dot : "";
+    return dot && dot >= basename && dot[1] ? dot : "";
 }
 
 bool is_native_package(const char* path) {
@@ -170,7 +187,7 @@ bool validate_package(const char* path, const char* manifest, uint32_t length) {
     const char* path_ext = extension_for(path);
     const char* package_ext = extension_for(m.package);
     if (package_ext[0] && !eq(path_ext, package_ext)) return false;
-    if (is_native_package(path) && runtime_from(m.runtime) != app_registry::Runtime::Native && runtime_from(m.runtime) != app_registry::Runtime::X90Fusion) return false;
+    if (is_native_package(path) && runtime_from(m.runtime) == app_registry::Runtime::WebSandbox) return false;
     return true;
 }
 
