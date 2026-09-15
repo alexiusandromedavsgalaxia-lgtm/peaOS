@@ -20,6 +20,7 @@ constexpr uint32_t kMaxCommand = 96;
 
 static inline uint8_t keyboard_status() { uint8_t v; asm volatile("inb %1, %0" : "=a"(v) : "Nd"(0x64)); return v; }
 static inline uint8_t keyboard_data() { uint8_t v; asm volatile("inb %1, %0" : "=a"(v) : "Nd"(0x60)); return v; }
+static inline void cpu_pause() { asm volatile("pause"); }
 
 char translate(uint8_t code) {
     static const char table[] = "??1234567890-=??qwertyuiop[]?asdfghjkl;'`?\\zxcvbnm,./?";
@@ -97,7 +98,7 @@ void run() {
     console::write_line("Type 'apps' to see the default suite or 'open NAME' to launch one.");
     console::write("peaOS> ");
     for (;;) {
-        if ((keyboard_status() & 1u) == 0) { asm volatile("hlt"); continue; }
+        if ((keyboard_status() & 1u) == 0) { cpu_pause(); continue; }
         const uint8_t code = keyboard_data();
         if (code & 0x80u) continue;
         if (code == 0x1Cu) { command[length] = 0; console::put('\n'); execute(command); length = 0; command[0] = 0; console::write("peaOS> "); }
