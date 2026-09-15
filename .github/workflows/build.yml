@@ -21,10 +21,20 @@ jobs:
           test -s build/peaOS-X90.bin
           test -s build/peaOS-X90.iso
           grub-file --is-x86-multiboot build/peaOS-X90.bin
-      - name: Boot smoke test
+      - name: Boot smoke test and kernel marker validation
         run: |
+          set +e
           timeout 8s qemu-system-x86_64 \
             -cdrom build/peaOS-X90.iso \
             -display none \
-            -serial none \
-            -monitor none || test $? -eq 124
+            -serial file:build/qemu-serial.log \
+            -monitor none
+          code=$?
+          set -e
+          test "$code" -eq 124
+          grep -F "C++ kernel: online" build/qemu-serial.log
+          grep -F "Initial Setup: privileged system service online" build/qemu-serial.log
+          grep -F "Activation state: unactivated" build/qemu-serial.log
+          grep -F "X90 Morph: ready" build/qemu-serial.log
+          grep -F "X90 filesystem snapshots: ready" build/qemu-serial.log
+          grep -F "X90 Fusion: ready" build/qemu-serial.log
