@@ -1,9 +1,35 @@
 ENTRY(_start)
+
 SECTIONS
 {
   . = 1M;
-  .text : { KEEP(*(.multiboot)) *(.text*) }
-  .rodata : { *(.rodata*) }
-  .data : { *(.data*) }
-  .bss : { *(COMMON) *(.bss*) }
+
+  .text : ALIGN(16)
+  {
+    KEEP(*(.multiboot))
+    *(.text*)
+  }
+
+  .rodata : ALIGN(16)
+  {
+    *(.rodata*)
+  }
+
+  .data : ALIGN(16)
+  {
+    *(.data*)
+  }
+
+  .bss : ALIGN(4096)
+  {
+    *(COMMON)
+    *(.bss*)
+  }
+
+  /DISCARD/ :
+  {
+    *(.comment)
+    *(.eh_frame*)
+    *(.note*)
+  }
 }
