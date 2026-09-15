@@ -39,7 +39,8 @@ void newline() {
         for (uint32_t y = 1; y < 25; ++y)
             for (uint32_t x = 0; x < 80; ++x)
                 VGA[(y - 1) * 80 + x] = VGA[y * 80 + x];
-        for (uint32_t x = 0; x < 80; ++x) VGA[24 * 80 + x] = static_cast<uint16_t>(' ') | (static_cast<uint16_t>(color) << 8);
+        for (uint32_t x = 0; x < 80; ++x)
+            VGA[24 * 80 + x] = static_cast<uint16_t>(' ') | (static_cast<uint16_t>(color) << 8);
         row = 24;
     }
 }
@@ -48,14 +49,19 @@ void newline() {
 namespace console {
 void clear() {
     serial_init();
-    for (uint32_t i = 0; i < 80 * 25; ++i) VGA[i] = static_cast<uint16_t>(' ') | (static_cast<uint16_t>(color) << 8);
+    for (uint32_t i = 0; i < 80 * 25; ++i)
+        VGA[i] = static_cast<uint16_t>(' ') | (static_cast<uint16_t>(color) << 8);
     row = column = 0;
 }
+
 void put(char c) {
     if (c == '\n') { newline(); return; }
     if (c == '\r') { column = 0; serial_put(c); return; }
     if (c == '\b') {
-        if (column) { --column; VGA[row * 80 + column] = static_cast<uint16_t>(' ') | (static_cast<uint16_t>(color) << 8); }
+        if (column) {
+            --column;
+            VGA[row * 80 + column] = static_cast<uint16_t>(' ') | (static_cast<uint16_t>(color) << 8);
+        }
         serial_put(c);
         return;
     }
@@ -63,6 +69,25 @@ void put(char c) {
     serial_put(c);
     if (++column >= 80) newline();
 }
-void write(const char* text) { while (*text) put(*text++); }
-void write_line(const char* text) { write(text); put('\n'); }
+
+void write(const char* text) {
+    if (!text) return;
+    while (*text) put(*text++);
+}
+
+void write_line(const char* text) {
+    write(text);
+    put('\n');
+}
+
+void write_uint(uint64_t value) {
+    char buffer[21];
+    uint32_t length = 0;
+    if (value == 0) { put('0'); return; }
+    while (value != 0 && length < sizeof(buffer)) {
+        buffer[length++] = static_cast<char>('0' + (value % 10));
+        value /= 10;
+    }
+    while (length) put(buffer[--length]);
+}
 }
