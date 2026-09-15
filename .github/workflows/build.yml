@@ -24,7 +24,7 @@ jobs:
           test -s build/peaOS-X90.bin
           test -s build/peaOS-X90.iso
           grub-file --is-x86-multiboot build/peaOS-X90.bin
-      - name: Boot smoke test and kernel marker validation
+      - name: Boot smoke test and truthful kernel marker validation
         run: |
           set +e
           timeout 8s qemu-system-x86_64 \
@@ -36,8 +36,8 @@ jobs:
           set -e
           test "$code" -eq 124
           grep -F "C++ kernel: online" build/qemu-serial.log
-          grep -F "Initial Setup: privileged system service online" build/qemu-serial.log
-          grep -F "Activation state: unactivated" build/qemu-serial.log
-          grep -F "X90 Morph: ready" build/qemu-serial.log
-          grep -F "X90 filesystem snapshots: ready" build/qemu-serial.log
-          grep -F "X90 Fusion: ready" build/qemu-serial.log
+          grep -F "Initial Setup: state machine initialized" build/qemu-serial.log
+          grep -F "Activation state: unactivated (fail-closed until online verification)" build/qemu-serial.log
+          grep -F "X90 Morph: state manager initialized" build/qemu-serial.log
+          grep -F "X90 filesystem snapshots: metadata manager initialized" build/qemu-serial.log
+          grep -F "X90 Fusion: runtime registry initialized" build/qemu-serial.log
