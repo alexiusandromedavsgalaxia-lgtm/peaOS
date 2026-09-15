@@ -66,7 +66,7 @@ void execute(const char* command) {
     else if (equal(command, "clear")) console::clear();
     else if (equal(command, "mem")) { console::write("Heap bytes used: "); console::write_uint(memory::bytes_used()); console::put('\n'); }
     else if (equal(command, "cpu")) {
-        const hardware_probe::Result r = hardware_probe::probe(0);
+        const hardware_probe::Result r = hardware_probe::probe(0, 0);
         console::write_line(r.cpuid_available ? "CPUID: OK" : "CPUID: unavailable");
         console::write_line(r.long_mode_available ? "Long mode: OK" : "Long mode: unknown");
         console::write_line(r.profile.cpu_supported ? "CPU baseline: supported" : "CPU baseline: unsupported");
