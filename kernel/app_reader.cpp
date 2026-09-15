@@ -1,9 +1,7 @@
 #include "app_reader.hpp"
-
 namespace app_reader {
 namespace { Entry g_entries[kMaxEntries]{}; uint32_t g_count=0; char g_names[kMaxEntries][48]{};
 bool eq(const char*a,const char*b){if(!a||!b)return false;while(*a&&*b&&*a==*b){++a;++b;}return *a==*b;}
-bool starts(const char*a,const char*b){if(!a||!b)return false;while(*b){if(*a++!=*b++)return false;}return true;}
 void copy_name(char*d,const char*s){uint32_t i=0;while(s&&s[i]&&s[i]!='\r'&&s[i]!='\n'&&i<47){d[i]=s[i];++i;}d[i]=0;}
 const char* trim(const char*p){while(*p==' '||*p=='\t')++p;return p;}
 }
