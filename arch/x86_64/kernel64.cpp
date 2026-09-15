@@ -39,7 +39,7 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     ui::init(1024, 768);
     app_manager::init();
 
-    const hardware_probe::Result hardware = hardware_probe::probe(multiboot_info);
+    const hardware_probe::Result hardware = hardware_probe::probe(magic, multiboot_info);
     console::write_line(hardware.cpuid_available ? "CPUID: OK" : "CPUID: unavailable");
     console::write_line(hardware.long_mode_available ? "Long mode capability: OK" : "Long mode capability: unknown");
     console::write_line(hardware.profile.cpu_supported ? "CPU baseline: supported" : "CPU baseline: unsupported");
@@ -66,8 +66,6 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
 
     ui::render_home();
     (void)syscall_api::kAbiVersion;
-    // Interrupts remain disabled until an IDT/PIC path exists.  Enabling STI
-    // here with no installed interrupt handlers could turn keyboard activity
-    // into an immediate triple fault.
+    // Interrupts remain disabled until an IDT/PIC path exists.
     shell::run();
 }
