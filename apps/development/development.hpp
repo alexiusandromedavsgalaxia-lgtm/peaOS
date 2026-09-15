@@ -25,6 +25,7 @@ Project create_project(Target target, const char* name);
 const char* target_name(Target target);
 const char* target_extension(Target target);
 bool target_available(Target target);
+void set_toolchain_ready(Target target, bool ready);
 void set_mac_connection(bool connected, bool xcode_open);
 MacLink mac_link();
 bool request_build(Target target);
