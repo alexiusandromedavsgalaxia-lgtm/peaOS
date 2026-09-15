@@ -1,0 +1,38 @@
+# peaOS 1 Beta 1 system application catalog
+# Initial Setup is a privileged boot/system flow, not an installable application.
+
+Launcher
+Files
+Settings
+Terminal
+Software Center
+Certificate Your App
+Web Distribution
+Task Manager
+System Monitor
+Text Editor
+Media Player
+Image Viewer
+Calculator
+Calendar
+Clock
+Network Manager
+Bluetooth
+Audio
+Display
+Users & Accounts
+Security Center
+Permissions
+Notifications
+About peaOS
+Help
+X90 Fusion Manager
+TimeMachine Manager
+Morph Manager
+Development
+
+[Development.targets]
+peaOS = native .pea .xpea .peac
+Windows = PE/Win32 .exe .dll
+Android = APK/AAB
+macOS = remote Mac build only; USB-C connected and Xcode open required
