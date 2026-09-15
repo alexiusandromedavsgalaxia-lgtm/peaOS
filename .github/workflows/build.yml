@@ -6,13 +6,25 @@ on:
   pull_request:
 
 jobs:
-  build:
+  build-x90:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install toolchain
+      - name: Install X90 toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++-multilib nasm grub-pc-bin grub-common xorriso qemu-system-x86
-      - name: Build kernel
-        run: make
+          sudo apt-get install -y g++ nasm grub-pc-bin grub-common xorriso qemu-system-x86
+      - name: Build peaOS 1 Beta 1 X90 ISO
+        run: make clean all
+      - name: Validate kernel and ISO
+        run: |
+          test -s build/peaOS-X90.bin
+          test -s build/peaOS-X90.iso
+          grub-file --is-x86-multiboot build/peaOS-X90.bin
+      - name: Boot smoke test
+        run: |
+          timeout 8s qemu-system-x86_64 \
+            -cdrom build/peaOS-X90.iso \
+            -display none \
+            -serial none \
+            -monitor none || test $? -eq 124
