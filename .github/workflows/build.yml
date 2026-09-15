@@ -14,6 +14,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y g++ nasm grub-pc-bin grub-common xorriso qemu-system-x86
+      - name: Validate web certificate service
+        working-directory: web-distribution/certificate-service
+        run: node self-test.mjs
       - name: Build peaOS 1 Beta 1 X90 ISO
         run: make clean all
       - name: Validate kernel and ISO
