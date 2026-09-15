@@ -15,6 +15,11 @@
 #include "kernel/desktop.hpp"
 #include "kernel/ui.hpp"
 #include "kernel/app_manager.hpp"
+#include "kernel/drivers/driver.hpp"
+#include "kernel/drivers/pci.hpp"
+#include "kernel/drivers/network.hpp"
+#include "kernel/drivers/bluetooth.hpp"
+#include "kernel/drivers/usb.hpp"
 
 extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::clear();
@@ -31,6 +36,14 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write_line("C++ kernel: online");
 
     memory::init();
+    drivers::init();
+    drivers::pci::init();
+    drivers::network::init();
+    drivers::bluetooth::init();
+    drivers::usb::init();
+    const uint32_t pci_count = drivers::pci::enumerate();
+    const uint32_t net_count = drivers::network::probe_pci();
+
     x90_features::init();
     activation::init();
     initial_setup::init();
@@ -47,6 +60,10 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write_line(hardware.long_mode_available ? "Long mode capability: OK" : "Long mode capability: unknown");
     console::write_line(hardware.profile.cpu_supported ? "CPU baseline: supported" : "CPU baseline: unsupported");
     console::write_line(hardware.profile.ram_bytes >= hardware::kMinimumRamBytes ? "RAM minimum: OK" : "RAM minimum: FAIL");
+    console::write("PCI devices: "); console::write_uint(pci_count); console::put('\n');
+    console::write("Supported Ethernet adapters: "); console::write_uint(net_count); console::put('\n');
+    console::write_line("Bluetooth HCI registry: online");
+    console::write_line("USB device model: online");
     console::write_line("Storage: VFS bootstrap online");
     console::write_line("Desktop: window manager state online");
     console::write("Interface: ");
