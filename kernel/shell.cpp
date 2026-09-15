@@ -1,6 +1,7 @@
 #include "shell.hpp"
 #include "console.hpp"
 #include "memory.hpp"
+#include "version.hpp"
 #include "process.hpp"
 #include "thread.hpp"
 #include "activation.hpp"
@@ -62,8 +63,10 @@ void execute(const char* command) {
         console::write_line("help version clear mem cpu apps open NAME");
         console::write_line("processes threads activation setup vfs windows");
         console::write_line("morph snapshot fusion ui echo TEXT");
-    } else if (equal(command, "version")) console::write_line("peaOS 1 Beta 1 | X90 x86_64 | 64-bit");
-    else if (equal(command, "clear")) console::clear();
+    } else if (equal(command, "version")) {
+        console::write("peaOS | kernel ");
+        console::write_line(kernel_version::kFullVersion);
+    } else if (equal(command, "clear")) console::clear();
     else if (equal(command, "mem")) { console::write("Heap bytes used: "); console::write_uint(memory::bytes_used()); console::put('\n'); }
     else if (equal(command, "cpu")) {
         const hardware_probe::Result r = hardware_probe::probe(0, 0);
@@ -94,6 +97,8 @@ void run() {
     uint32_t length = 0;
     console::write_line("");
     console::write_line("peaOS X90 shell");
+    console::write("Kernel version: ");
+    console::write_line(kernel_version::kFullVersion);
     console::write_line("Minimal desktop services are online.");
     console::write_line("Type 'apps' to see the default suite or 'open NAME' to launch one.");
     console::write("peaOS> ");
