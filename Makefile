@@ -3,39 +3,39 @@ LD := ld
 NASM := nasm
 GRUB := grub-mkrescue
 
-CXXFLAGS := -m32 -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fno-pie -fno-use-cxa-atexit -fno-builtin -O2 -Wall -Wextra -Ikernel
-LDFLAGS := -m elf_i386 -T linker.ld
+CXXFLAGS64 := -m64 -march=x86-64 -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fno-pie -fno-use-cxa-atexit -fno-builtin -mno-red-zone -O2 -Wall -Wextra -Ikernel
+LDFLAGS64 := -m elf_x86_64 -T arch/x86_64/linker.ld
 
 BUILD := build
-ISO := $(BUILD)/peaOS.iso
-KERNEL := $(BUILD)/peaOS.bin
+ISO := $(BUILD)/peaOS64.iso
+KERNEL := $(BUILD)/peaOS64.bin
 
-CPP_SOURCES := kernel.cpp $(wildcard kernel/*.cpp)
+CPP_SOURCES := arch/x86_64/kernel64.cpp $(wildcard kernel/*.cpp)
 CPP_OBJECTS := $(patsubst %.cpp,$(BUILD)/%.o,$(CPP_SOURCES))
 
 all: $(ISO)
 
 $(BUILD):
-	mkdir -p $(BUILD)/kernel
+	mkdir -p $(BUILD)/arch/x86_64 $(BUILD)/kernel
 
-$(BUILD)/boot.o: boot.asm | $(BUILD)
-	$(NASM) -f elf32 $< -o $@
+$(BUILD)/arch/x86_64/boot.o: arch/x86_64/boot.asm | $(BUILD)
+	$(NASM) -f elf64 $< -o $@
 
 $(BUILD)/%.o: %.cpp | $(BUILD)
 	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS64) -c $< -o $@
 
-$(KERNEL): $(BUILD)/boot.o $(CPP_OBJECTS) linker.ld
-	$(LD) $(LDFLAGS) -o $@ $(BUILD)/boot.o $(CPP_OBJECTS)
+$(KERNEL): $(BUILD)/arch/x86_64/boot.o $(CPP_OBJECTS) arch/x86_64/linker.ld
+	$(LD) $(LDFLAGS64) -o $@ $(BUILD)/arch/x86_64/boot.o $(CPP_OBJECTS)
 
-$(ISO): $(KERNEL) grub.cfg
+$(ISO): $(KERNEL) arch/x86_64/grub.cfg
 	mkdir -p $(BUILD)/iso/boot/grub
-	cp $(KERNEL) $(BUILD)/iso/boot/peaOS.bin
-	cp grub.cfg $(BUILD)/iso/boot/grub/grub.cfg
+	cp $(KERNEL) $(BUILD)/iso/boot/peaOS64.bin
+	cp arch/x86_64/grub.cfg $(BUILD)/iso/boot/grub/grub.cfg
 	$(GRUB) -o $@ $(BUILD)/iso
 
 run: $(ISO)
-	qemu-system-i386 -cdrom $(ISO)
+	qemu-system-x86_64 -cdrom $(ISO)
 
 clean:
 	rm -rf $(BUILD)
