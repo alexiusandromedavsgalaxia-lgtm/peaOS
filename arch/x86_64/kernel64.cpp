@@ -23,6 +23,7 @@
 #include "kernel/drivers/network.hpp"
 #include "kernel/drivers/bluetooth.hpp"
 #include "kernel/drivers/usb.hpp"
+#include "kernel/system_provision.hpp"
 
 extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::clear();
@@ -59,6 +60,7 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     app_ui::init(1024, 768);
     app_runtime::init();
     app_manager::init();
+    systemprovision::init();
 
     const hardware_probe::Result hardware = hardware_probe::probe(magic, multiboot_info);
     console::write_line(hardware.cpuid_available ? "CPUID: OK" : "CPUID: unavailable");
@@ -76,11 +78,13 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write_line("Application surfaces: per-app state and event routing online");
     console::write_line("Firmware validation: bootstrap profile");
 
-    console::write_line("Certificate registry: synchronized build snapshot");
+    console::write_line("Certificate registry: R35-SHA512 synchronized build snapshot");
     console::write("Certificate issuer: "); console::write_line(certificate_registry::kIssuer);
+    console::write("Certificate type: "); console::write_line(certificate_registry::kAuthentication);
     console::write("Certificate version: "); console::write_uint(certificate_registry::kCertificateVersion); console::put('\n');
-    console::write("Official certificates in registry: "); console::write_uint(certificate_registry::kCertificateCount); console::put('\n');
-    console::write("Registry SHA-256: "); console::write_line(certificate_registry::kRegistrySha256);
+    console::write("Official signing certificates in registry: "); console::write_uint(certificate_registry::kCertificateCount); console::put('\n');
+    console::write("Registry SHA-512: "); console::write_line(certificate_registry::kRegistrySha512);
+    console::write_line("SystemProvision: R35 endpoint authentication ready (network transport required)");
 
     console::write_line("Initial Setup: state machine initialized");
     console::write_line("First boot: activation is part of Initial Setup");
