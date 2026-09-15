@@ -1,4 +1,5 @@
 BITS 32
+
 section .multiboot
 align 4
 mb_header:
@@ -11,21 +12,34 @@ extern kernel_main64
 global _start
 _start:
     cli
+    cld
     mov esp, stack_top
     mov [multiboot_magic], eax
     mov [multiboot_info_ptr], ebx
 
     lgdt [gdt64_descriptor]
+
+    ; Enable PAE.
     mov eax, cr4
     or eax, 1 << 5
     mov cr4, eax
 
+    ; Enable long mode through EFER.LME.
+    mov ecx, 0xC0000080
+    rdmsr
+    or eax, 1 << 8
+    wrmsr
+
+    ; Install the identity map for the first 2 MiB.
     mov eax, page_table_l4
     mov cr3, eax
+
+    ; Enable paging while protected mode is already active.
     mov eax, cr0
     or eax, 1 << 31
     mov cr0, eax
 
+    ; Far jump reloads CS and enters 64-bit mode.
     jmp 0x08:long_mode_entry
 
 BITS 64
@@ -34,10 +48,19 @@ long_mode_entry:
     mov ds, ax
     mov es, ax
     mov ss, ax
+    xor eax, eax
+    mov fs, ax
+    mov gs, ax
+
+    ; Keep SysV x86_64 stack alignment at the C++ boundary.
+    and rsp, -16
+    sub rsp, 8
     mov rdi, [multiboot_magic]
     mov rsi, [multiboot_info_ptr]
     call kernel_main64
+
 .hang:
+    cli
     hlt
     jmp .hang
 
