@@ -4,24 +4,23 @@ namespace development {
 namespace {
 MacLink g_mac{MacState::RequiresMac, false, false, 0};
 const char* g_status = "Selecciona un objetivo de desarrollo.";
-bool g_toolchain_ready[4] = {false, false, false, false};
+bool g_toolchain_ready[4] = {true, false, false, false};
 }
 
 void init() {
     g_mac = {MacState::RequiresMac, false, false, 0};
     g_status = "Selecciona un objetivo de desarrollo.";
-    for (bool& ready : g_toolchain_ready) ready = false;
+    g_toolchain_ready[0] = true;
+    g_toolchain_ready[1] = false;
+    g_toolchain_ready[2] = false;
+    g_toolchain_ready[3] = false;
 }
 
 Project create_project(Target target, const char* name) {
     Project p{target, name, target_extension(target), target == Target::MacOS};
-    if (!name || !*name) {
-        g_status = "No se puede crear un proyecto sin nombre.";
-    } else if (!target_available(target)) {
-        g_status = "El toolchain seleccionado no está disponible.";
-    } else {
-        g_status = "Proyecto creado.";
-    }
+    if (!name || !*name) g_status = "No se puede crear un proyecto sin nombre.";
+    else if (!target_available(target)) g_status = "El toolchain seleccionado no está disponible.";
+    else g_status = "Proyecto creado.";
     return p;
 }
 
@@ -49,6 +48,13 @@ bool target_available(Target target) {
     if (target == Target::MacOS)
         return g_mac.usb_c_connected && g_mac.xcode_open && g_mac.state == MacState::Ready;
     return g_toolchain_ready[static_cast<uint8_t>(target)];
+}
+
+void set_toolchain_ready(Target target, bool ready) {
+    const uint8_t index = static_cast<uint8_t>(target);
+    if (index >= 4 || target == Target::MacOS) return;
+    g_toolchain_ready[index] = ready;
+    g_status = ready ? "Toolchain disponible." : "Toolchain marcado como no disponible.";
 }
 
 void set_mac_connection(bool connected, bool xcode_open) {
