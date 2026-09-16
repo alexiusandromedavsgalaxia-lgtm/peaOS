@@ -5,7 +5,6 @@ namespace {
 Certificate g_current{};
 bool g_active=false;
 bool zero(const uint8_t* p,uint32_t n){if(!p)return true;for(uint32_t i=0;i<n;i++)if(p[i])return false;return true;}
-bool same(const uint8_t* a,const uint8_t* b,uint32_t n){if(!a||!b)return false;uint8_t d=0;for(uint32_t i=0;i<n;i++)d|=a[i]^b[i];return d==0;}
 }
 void init(){g_current={};g_active=false;}
 bool expired(const Certificate* c,uint64_t now){if(!c||c->magic!=kMagic||c->version!=kVersion||now==0)return true;return c->expires_at<=c->issued_at||now<c->issued_at||now>=c->expires_at||c->expires_at-c->issued_at>kValiditySeconds;}
