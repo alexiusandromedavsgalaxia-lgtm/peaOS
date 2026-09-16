@@ -18,7 +18,7 @@ jobs:
       - name: Install X90 toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++ nasm grub-pc-bin grub-common xorriso qemu-system-x86 nodejs
+          sudo apt-get install -y g++ nasm grub-pc-bin grub-common mtools xorriso qemu-system-x86 nodejs
 
       - name: Prepare generated headers for repository validation
         run: |
