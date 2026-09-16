@@ -49,8 +49,16 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     drivers::xhci::init();
     const uint32_t pci_count = drivers::pci::enumerate();
     const uint32_t net_count = drivers::network::probe_pci();
+    const drivers::network::Interface* network_interfaces = drivers::network::interfaces(nullptr);
     const bool xhci_ok = drivers::xhci::probe();
-    for (uint32_t i = 1; i <= net_count; ++i) drivers::network::bring_up(i);
+
+    // Keep the probed interface table stable for diagnostics.  Using the
+    // returned array directly avoids a second lookup through mutable global
+    // count state while a hardware driver is being brought up.
+    for (uint32_t i = 0; i < net_count; ++i) {
+        if (!network_interfaces) break;
+        drivers::network::bring_up(network_interfaces[i].id);
+    }
 
     x90_features::init();
     activation::init();
@@ -74,7 +82,7 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write("PCI devices: "); console::write_uint(pci_count); console::put('\n');
     console::write("Ethernet adapters detected: "); console::write_uint(net_count); console::put('\n');
     for (uint32_t i = 0; i < net_count; ++i) {
-        const drivers::network::Interface* n = drivers::network::interface_for(i + 1);
+        const drivers::network::Interface* n = network_interfaces ? &network_interfaces[i] : nullptr;
         if (!n) continue;
         console::write("  "); console::write_line(drivers::network::driver_name(n->driver));
         console::write("    state: "); console::write_line(drivers::network::state_name(n->state));

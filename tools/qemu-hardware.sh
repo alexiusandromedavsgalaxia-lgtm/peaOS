@@ -18,7 +18,7 @@ COMMON=(
   -machine q35,accel=tcg
   -cpu max
   -smp 2
-  -m 1024
+  -m 2048
   -boot order=d
   -drive file="$ISO",media=cdrom,readonly=on
   -display "$QEMU_DISPLAY"
