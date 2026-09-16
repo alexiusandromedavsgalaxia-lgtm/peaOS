@@ -20,6 +20,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y g++ nasm grub-pc-bin grub-common xorriso qemu-system-x86 nodejs
 
+      - name: Prepare generated headers for repository validation
+        run: |
+          mkdir -p build/generated
+          node web-distribution/certificate-service/sync-registry.mjs build/generated/certificate_registry.hpp
+
       - name: Repository-wide syntax validation
         run: |
           set -euo pipefail
