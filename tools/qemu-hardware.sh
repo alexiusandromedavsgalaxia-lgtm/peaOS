@@ -6,6 +6,7 @@ set -euo pipefail
 
 PROFILE="${1:-all}"
 ISO="${2:-build/peaOS-X90.iso}"
+QEMU_DISPLAY="${QEMU_DISPLAY:-gtk}"
 
 if [[ ! -f "$ISO" ]]; then
   echo "ISO not found: $ISO" >&2
@@ -20,6 +21,7 @@ COMMON=(
   -m 1024
   -boot order=d
   -drive file="$ISO",media=cdrom,readonly=on
+  -display "$QEMU_DISPLAY"
   -serial stdio
 )
 
