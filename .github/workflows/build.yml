@@ -41,3 +41,48 @@ jobs:
           grep -F "X90 Morph: state manager initialized" build/qemu-serial.log
           grep -F "X90 filesystem snapshots: metadata manager initialized" build/qemu-serial.log
           grep -F "X90 Fusion: runtime registry initialized" build/qemu-serial.log
+      - name: Test virtual RTL8139 driver
+        env:
+          QEMU_DISPLAY: none
+        run: |
+          set +e
+          timeout 8s bash tools/qemu-hardware.sh rtl8139 build/peaOS-X90.iso > build/rtl8139.log 2>&1
+          code=$?
+          set -e
+          test "$code" -eq 124
+          grep -F "Realtek RTL8139" build/rtl8139.log
+          grep -F "state: initialized" build/rtl8139.log
+          grep -F "link: up" build/rtl8139.log
+      - name: Test virtual Intel E1000 driver
+        env:
+          QEMU_DISPLAY: none
+        run: |
+          set +e
+          timeout 8s bash tools/qemu-hardware.sh e1000 build/peaOS-X90.iso > build/e1000.log 2>&1
+          code=$?
+          set -e
+          test "$code" -eq 124
+          grep -F "Intel E1000 family" build/e1000.log
+          grep -F "state: initialized" build/e1000.log
+          grep -F "link: up" build/e1000.log
+      - name: Test virtual VirtIO network driver
+        env:
+          QEMU_DISPLAY: none
+        run: |
+          set +e
+          timeout 8s bash tools/qemu-hardware.sh virtio-net build/peaOS-X90.iso > build/virtio-net.log 2>&1
+          code=$?
+          set -e
+          test "$code" -eq 124
+          grep -F "VirtIO network" build/virtio-net.log
+          grep -F "state: initialized" build/virtio-net.log
+      - name: Test virtual xHCI controller
+        env:
+          QEMU_DISPLAY: none
+        run: |
+          set +e
+          timeout 8s bash tools/qemu-hardware.sh usb-xhci build/peaOS-X90.iso > build/xhci.log 2>&1
+          code=$?
+          set -e
+          test "$code" -eq 124
+          grep -F "xHCI: running" build/xhci.log
