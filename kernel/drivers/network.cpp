@@ -13,7 +13,6 @@ static inline void outl(uint16_t port, uint32_t value) { asm volatile("outl %0, 
 static inline uint32_t inl(uint16_t port) { uint32_t value; asm volatile("inl %1, %0" : "=a"(value) : "Nd"(port)); return value; }
 static inline uint32_t mmio_read32(uint64_t address) { return *reinterpret_cast<volatile uint32_t*>(address); }
 static inline void mmio_write32(uint64_t address, uint32_t value) { *reinterpret_cast<volatile uint32_t*>(address) = value; }
-static inline void io_wait() { asm volatile("outb %%al, $0x80" :: "a"(0)); }
 
 alignas(256) static uint8_t rtl_rx_buffer[8192 + 16];
 struct E1000Desc { uint64_t address; uint16_t length; uint16_t checksum; uint8_t status; uint8_t errors; uint16_t special; };
@@ -40,10 +39,18 @@ bool init_rtl8139(drivers::network::Interface& n) {
     if (!io) return false;
     const uint16_t command = drivers::pci::read16(n.pci_bus, n.pci_slot, n.pci_function, 0x04);
     drivers::pci::write16(n.pci_bus, n.pci_slot, n.pci_function, 0x04, command | 0x0006u);
+
     outb(io + 0x52, 0x00);
     outb(io + 0x37, 0x10);
-    for (uint32_t i = 0; i < 100000 && (inb(io + 0x37) & 0x10); ++i) io_wait();
-    if (inb(io + 0x37) & 0x10) return false;
+    // The reset register is polled with a bounded CPU delay.  Performing an
+    // I/O wait on every iteration can take several seconds under QEMU TCG and
+    // prevents the kernel from reaching the driver status output.
+    for (uint32_t i = 0; i < 100000; ++i) {
+        if ((inb(io + 0x37) & 0x10u) == 0) break;
+        asm volatile("pause");
+    }
+    if (inb(io + 0x37) & 0x10u) return false;
+
     for (uint32_t i = 0; i < 6; ++i) n.mac[i] = inb(io + static_cast<uint16_t>(i));
     const uint32_t rx = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(rtl_rx_buffer));
     outl(io + 0x30, rx);
@@ -51,6 +58,8 @@ bool init_rtl8139(drivers::network::Interface& n) {
     outw(io + 0x44, 0x000Fu);
     outl(io + 0x40, 0x03000700u);
     outb(io + 0x37, 0x0C);
+
+    // Media Status Register (0x58), LinkStatus bit: 1 means carrier/link up.
     const uint8_t media = inb(io + 0x58);
     n.link = (media & 0x04u) ? drivers::network::Link::Up : drivers::network::Link::Down;
     n.state = drivers::network::State::Initialized;
