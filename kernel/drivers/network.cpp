@@ -40,19 +40,17 @@ bool init_rtl8139(drivers::network::Interface& n) {
     if (!io) return false;
     const uint16_t command = drivers::pci::read16(n.pci_bus, n.pci_slot, n.pci_function, 0x04);
     drivers::pci::write16(n.pci_bus, n.pci_slot, n.pci_function, 0x04, command | 0x0006u);
-
-    outb(io + 0x52, 0x00);             // power on
-    outb(io + 0x37, 0x10);             // reset
+    outb(io + 0x52, 0x00);
+    outb(io + 0x37, 0x10);
     for (uint32_t i = 0; i < 100000 && (inb(io + 0x37) & 0x10); ++i) io_wait();
     if (inb(io + 0x37) & 0x10) return false;
-
     for (uint32_t i = 0; i < 6; ++i) n.mac[i] = inb(io + static_cast<uint16_t>(i));
     const uint32_t rx = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(rtl_rx_buffer));
-    outl(io + 0x30, rx);               // RBSTART
-    outw(io + 0x3C, 0x0005);           // enable receive + transmit interrupts
-    outw(io + 0x44, 0x0000000Fu);      // accept physical/multicast/broadcast + wrap
-    outl(io + 0x40, 0x03000700u);      // DMA transmit settings
-    outb(io + 0x37, 0x0C);             // receiver + transmitter enable
+    outl(io + 0x30, rx);
+    outw(io + 0x3C, 0x0005);
+    outw(io + 0x44, 0x000Fu);
+    outl(io + 0x40, 0x03000700u);
+    outb(io + 0x37, 0x0C);
     const uint8_t media = inb(io + 0x58);
     n.link = (media & 0x04u) ? drivers::network::Link::Up : drivers::network::Link::Down;
     n.state = drivers::network::State::Initialized;
@@ -65,37 +63,24 @@ bool init_e1000(drivers::network::Interface& n) {
     if (!mmio) return false;
     const uint16_t command = drivers::pci::read16(n.pci_bus, n.pci_slot, n.pci_function, 0x04);
     drivers::pci::write16(n.pci_bus, n.pci_slot, n.pci_function, 0x04, command | 0x0006u);
-
-    mmio_write32(mmio + 0x0000, 0x00000040u); // RST
+    mmio_write32(mmio + 0x0000, 0x00000040u);
     for (volatile uint32_t i = 0; i < 100000; ++i) { if ((mmio_read32(mmio + 0x0000) & 0x40u) == 0) break; }
-
     const uint32_t ral = mmio_read32(mmio + 0x5400);
     const uint32_t rah = mmio_read32(mmio + 0x5404);
     n.mac[0] = static_cast<uint8_t>(ral); n.mac[1] = static_cast<uint8_t>(ral >> 8);
     n.mac[2] = static_cast<uint8_t>(ral >> 16); n.mac[3] = static_cast<uint8_t>(ral >> 24);
     n.mac[4] = static_cast<uint8_t>(rah); n.mac[5] = static_cast<uint8_t>(rah >> 8);
-
     mmio_write32(mmio + 0x02800, static_cast<uint32_t>(reinterpret_cast<uintptr_t>(e1000_rx)));
-    mmio_write32(mmio + 0x02804, 0);
-    mmio_write32(mmio + 0x02808, 16 * sizeof(E1000Desc));
-    mmio_write32(mmio + 0x02810, 0);
-    mmio_write32(mmio + 0x02818, 15);
-    mmio_write32(mmio + 0x02828, 0);
-    for (uint32_t i = 0; i < 16; ++i) {
-        e1000_rx[i] = {};
-        e1000_rx[i].address = reinterpret_cast<uintptr_t>(e1000_rx_buffers[i]);
-    }
-
+    mmio_write32(mmio + 0x02804, 0); mmio_write32(mmio + 0x02808, 16 * sizeof(E1000Desc));
+    mmio_write32(mmio + 0x02810, 0); mmio_write32(mmio + 0x02818, 15); mmio_write32(mmio + 0x02828, 0);
+    for (uint32_t i = 0; i < 16; ++i) { e1000_rx[i] = {}; e1000_rx[i].address = reinterpret_cast<uintptr_t>(e1000_rx_buffers[i]); }
     mmio_write32(mmio + 0x03800, static_cast<uint32_t>(reinterpret_cast<uintptr_t>(e1000_tx)));
-    mmio_write32(mmio + 0x03804, 0);
-    mmio_write32(mmio + 0x03808, 16 * sizeof(E1000Desc));
-    mmio_write32(mmio + 0x03810, 0);
-    mmio_write32(mmio + 0x03818, 15);
+    mmio_write32(mmio + 0x03804, 0); mmio_write32(mmio + 0x03808, 16 * sizeof(E1000Desc));
+    mmio_write32(mmio + 0x03810, 0); mmio_write32(mmio + 0x03818, 15);
     for (uint32_t i = 0; i < 16; ++i) e1000_tx[i] = {};
-
-    mmio_write32(mmio + 0x0100, 0x00000002u | 0x00000004u | 0x00000008u | 0x00000010u | 0x00000080u); // EN + broadcasts + multicast + long packet
-    mmio_write32(mmio + 0x0400, 0x00000002u | 0x00000008u | 0x00000010u | 0x00000020u); // EN + pad + collision controls
-    mmio_write32(mmio + 0x0000, 0x00000040u | 0x00000020u | 0x00000010u); // SLU + ASDE + FD
+    mmio_write32(mmio + 0x0100, 0x0000009Eu);
+    mmio_write32(mmio + 0x0400, 0x0000003Au);
+    mmio_write32(mmio + 0x0000, 0x00000070u);
     const bool link = (mmio_read32(mmio + 0x0008) & 0x02u) != 0;
     n.link = link ? drivers::network::Link::Up : drivers::network::Link::Down;
     n.state = drivers::network::State::Initialized;
@@ -108,22 +93,14 @@ bool init_virtio(drivers::network::Interface& n) {
     if (!io) return false;
     const uint16_t command = drivers::pci::read16(n.pci_bus, n.pci_slot, n.pci_function, 0x04);
     drivers::pci::write16(n.pci_bus, n.pci_slot, n.pci_function, 0x04, command | 0x0006u);
-
-    // Transitional virtio-pci device: reset, acknowledge, select DRIVER and DRIVER_OK.
-    outb(io + 0x12, 0x00);
-    outb(io + 0x12, 0x01);
-    outb(io + 0x12, 0x03);
-    const uint32_t host_features = inl(io + 0x00);
-    (void)host_features;
-    outl(io + 0x04, 0x00000000u);       // no optional features required for probe/bring-up
-    outw(io + 0x0E, 0);                 // queue 0
+    outb(io + 0x12, 0x00); outb(io + 0x12, 0x01); outb(io + 0x12, 0x03);
+    const uint32_t host_features = inl(io + 0x00); (void)host_features;
+    outl(io + 0x04, 0x00000000u); outw(io + 0x0E, 0);
     const uint16_t qsize = inw(io + 0x0C);
     if (qsize == 0) return false;
-
-    // A legacy virtio-net device exposes MAC and link status in its config space.
     for (uint32_t i = 0; i < 6; ++i) n.mac[i] = inb(io + 0x14 + static_cast<uint16_t>(i));
     const uint16_t link = inw(io + 0x14 + 6);
-    outb(io + 0x12, 0x07);               // DRIVER_OK
+    outb(io + 0x12, 0x07);
     n.link = (link & 1u) ? drivers::network::Link::Up : drivers::network::Link::Unknown;
     n.state = drivers::network::State::Initialized;
     n.active = n.link == drivers::network::Link::Up;
@@ -132,14 +109,15 @@ bool init_virtio(drivers::network::Interface& n) {
 
 bool add(const drivers::pci::Device& d, uint32_t id) {
     if (g_count >= drivers::network::kMaxInterfaces) return false;
-    DriverKind kind = DriverKind::None;
-    if (d.vendor == 0x10EC && d.device == 0x8139) kind = DriverKind::RTL8139;
-    else if (d.vendor == 0x8086 && (d.device == 0x100E || d.device == 0x100F || d.device == 0x10D3 || d.device == 0x1533)) kind = DriverKind::IntelE1000;
-    else if (d.vendor == 0x1AF4 && d.device >= 0x1000 && d.device <= 0x107F) kind = DriverKind::VirtioNet;
+    drivers::network::DriverKind kind = drivers::network::DriverKind::None;
+    if (d.vendor == 0x10EC && d.device == 0x8139) kind = drivers::network::DriverKind::RTL8139;
+    else if (d.vendor == 0x8086 && (d.device == 0x100E || d.device == 0x100F || d.device == 0x10D3 || d.device == 0x1533)) kind = drivers::network::DriverKind::IntelE1000;
+    else if (d.vendor == 0x1AF4 && d.device >= 0x1000 && d.device <= 0x107F) kind = drivers::network::DriverKind::VirtioNet;
     else return false;
-    Interface& n = g_interfaces[g_count];
+    drivers::network::Interface& n = g_interfaces[g_count];
     n = {};
-    n.id = id; n.medium = Medium::Ethernet; n.driver = kind; n.link = Link::Unknown; n.state = State::Probed; n.mtu = 1500;
+    n.id = id; n.medium = drivers::network::Medium::Ethernet; n.driver = kind;
+    n.link = drivers::network::Link::Unknown; n.state = drivers::network::State::Probed; n.mtu = 1500;
     n.pci_bus = d.bus; n.pci_slot = d.slot; n.pci_function = d.function;
     n.io_base = bar_io(d); n.mmio_base = bar_mmio(d);
     ++g_count;
