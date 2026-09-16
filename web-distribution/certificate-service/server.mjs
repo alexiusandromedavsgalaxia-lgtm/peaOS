@@ -30,7 +30,7 @@ function json(res,status,body,extra={}){const data=Buffer.from(JSON.stringify(bo
 function validName(v){return typeof v==='string'&&v.trim().length>0&&v.trim().length<=120;}
 function canonical(c){return JSON.stringify({version:c.version,type:c.type,certificate_id:c.certificate_id,issuer_key_id:c.issuer_key_id,issued_at:c.issued_at,expires_at:c.expires_at,serial:c.serial,public_key:c.public_key});}
 function sign(c){return crypto.sign(null,Buffer.from(canonical(c)),privateKey).toString('base64');}
-function certificatePayload(c){return JSON.stringify(c,null,2)+'\n';}
+function certificatePayload(c){const payload={...c};delete payload.sha512;return JSON.stringify(payload,null,2)+'\n';}
 function certificateSha512(c){return crypto.createHash('sha512').update(certificatePayload(c)).digest('hex');}
 function validCertificate(c){return c&&c.version===CERTIFICATE_VERSION&&c.type==='SigningCertificate'&&/^[a-f0-9]{32}$/.test(c.certificate_id)&&/^[a-f0-9]{32}$/.test(c.issuer_key_id)&&/^[a-f0-9]{16}$/.test(c.serial)&&Number.isSafeInteger(c.issued_at)&&Number.isSafeInteger(c.expires_at)&&c.expires_at>c.issued_at&&c.expires_at-c.issued_at<=365*24*60*60&&typeof c.public_key==='string'&&typeof c.signature==='string'&&typeof c.sha512==='string'&&c.sha512===certificateSha512(c);}
 function active(r){const now=Math.floor(Date.now()/1000);return !r.revoked&&now>=r.certificate.issued_at&&now<r.certificate.expires_at;}
