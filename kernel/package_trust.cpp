@@ -9,9 +9,7 @@ Result verify(const Package& package, uint64_t now) {
     if (!package.digest || package.digest_size == 0) return Result::Rejected;
     if (!package.certificate) return Result::Rejected;
 
-    const certificate::Status status = certificate::validate(
-        package.certificate, now, package.certificate->application_count,
-        package.distribution);
+    const certificate::Status status = certificate::validate(package.certificate, now);
     if (status != certificate::Status::Valid) return Result::Rejected;
 
     // Cryptographic signature and digest binding remain deliberately fail-closed
