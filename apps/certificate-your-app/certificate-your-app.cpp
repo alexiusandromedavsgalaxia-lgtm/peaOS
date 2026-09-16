@@ -9,9 +9,21 @@ bool supports_native_package(const char* extension){return ends_with(extension,"
 RenewalResult renew_manually(const char* certificate_id,uint64_t now){RenewalResult result{};result.status=certificate::Status::ServerUnavailable;if(!certificate_id||!*certificate_id||now==0)return result;return result;}
 
 RenewalResult apply_server_validation(const certificate::Certificate* cert,const certificate::ServerValidation& server,const uint8_t* expected_origin_hash,const uint8_t* package_hash){
+    (void)expected_origin_hash;
+    (void)package_hash;
     RenewalResult result{};
-    result.status=certificate::validate_server(cert,server,expected_origin_hash,package_hash);
-    if(result.status==certificate::Status::Valid){result.success=true;result.applications_bound=cert->application_count;result.expires_at=cert->expires_at;certificate::install(cert);}else{certificate::invalidate();}
+    result.status=certificate::validate_server(cert,server);
+    if(result.status==certificate::Status::Valid){
+        result.success=true;
+        result.applications_bound=1;
+        result.expires_at=cert->expires_at;
+        if(!certificate::install(cert,cert->issued_at)){
+            result.success=false;
+            result.status=certificate::Status::Invalid;
+        }
+    }else{
+        certificate::invalidate();
+    }
     return result;
 }
 
