@@ -23,6 +23,7 @@
 #include "kernel/drivers/network.hpp"
 #include "kernel/drivers/bluetooth.hpp"
 #include "kernel/drivers/usb.hpp"
+#include "kernel/drivers/xhci.hpp"
 #include "kernel/system_provision.hpp"
 
 extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
@@ -45,8 +46,11 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     drivers::network::init();
     drivers::bluetooth::init();
     drivers::usb::init();
+    drivers::xhci::init();
     const uint32_t pci_count = drivers::pci::enumerate();
     const uint32_t net_count = drivers::network::probe_pci();
+    const bool xhci_ok = drivers::xhci::probe();
+    for (uint32_t i = 1; i <= net_count; ++i) drivers::network::bring_up(i);
 
     x90_features::init();
     activation::init();
@@ -68,9 +72,18 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write_line(hardware.profile.cpu_supported ? "CPU baseline: supported" : "CPU baseline: unsupported");
     console::write_line(hardware.profile.ram_bytes >= hardware::kMinimumRamBytes ? "RAM minimum: OK" : "RAM minimum: FAIL");
     console::write("PCI devices: "); console::write_uint(pci_count); console::put('\n');
-    console::write("Supported Ethernet adapters (probe only): "); console::write_uint(net_count); console::put('\n');
-    console::write_line("Bluetooth adapter registry: initialized (no HCI transport yet)");
-    console::write_line("USB device model: initialized (no controller transport yet)");
+    console::write("Ethernet adapters detected: "); console::write_uint(net_count); console::put('\n');
+    for (uint32_t i = 0; i < net_count; ++i) {
+        const network::Interface& n = *drivers::network::interface_for(i + 1);
+        console::write("  "); console::write_line(drivers::network::driver_name(n.driver));
+        console::write("    state: "); console::write_line(drivers::network::state_name(n.state));
+        console::write("    link: "); console::write_line(drivers::network::link_name(n.link));
+    }
+    if (xhci_ok) {
+        console::write("xHCI: running, ports="); console::write_uint(drivers::xhci::port_count()); console::put('\n');
+    } else console::write_line("xHCI: not available");
+    console::write_line("Bluetooth adapter registry: initialized (HCI transport pending)");
+    console::write_line("USB device model: initialized (xHCI controller online when hardware is present)");
     console::write_line("Storage: VFS bootstrap online");
     console::write_line("Desktop: window manager state online");
     console::write("Interface: ");
