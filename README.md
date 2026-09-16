@@ -5,6 +5,30 @@
 
 peaOS is being built as a complete desktop operating system, primarily in freestanding C++, with a tiny assembly entry layer where the CPU requires it.
 
+## Bootable X90 ISO
+
+The main build now produces a real bootable x86_64 ISO at:
+
+```text
+build/peaOS-X90.iso
+```
+
+Build it locally with:
+
+```text
+make clean all
+```
+
+or explicitly:
+
+```text
+make iso
+```
+
+The CI build validates the Multiboot kernel, boots the ISO under QEMU, checks kernel boot markers, exercises the virtual network/USB hardware paths, and publishes the resulting ISO as the **peaOS-X90-ISO** workflow artifact when all checks pass.
+
+For UTM, create an **x86_64** virtual machine and attach the generated `peaOS-X90.iso` as its optical/boot image. peaOS currently targets the x86_64/X90 path. ARM64 UTM VMs are not the target for this ISO.
+
 <!-- OFFICIAL_CERTIFICATES:START -->
 ## Live certificate registry
 
