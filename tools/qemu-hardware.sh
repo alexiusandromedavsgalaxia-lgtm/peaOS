@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Temporary, realistic QEMU hardware profiles for peaOS driver bring-up.
-# These devices exist only for the lifetime of the QEMU process.
+# Devices exist only for the lifetime of the QEMU process.
 
 PROFILE="${1:-all}"
 ISO="${2:-build/peaOS-X90.iso}"
@@ -18,38 +18,30 @@ COMMON=(
   -cpu max
   -smp 2
   -m 1024
-  -nodefaults
   -boot order=d
   -drive file="$ISO",media=cdrom,readonly=on
-  -display gtk
+  -serial stdio
 )
+
+run_qemu() {
+  exec qemu-system-x86_64 "${COMMON[@]}" "$@"
+}
 
 case "$PROFILE" in
   rtl8139)
-    exec qemu-system-x86_64 "${COMMON[@]}" \
-      -device rtl8139,netdev=net0 \
-      -netdev user,id=net0,ipv4=on,ipv6=on
+    run_qemu -device rtl8139,netdev=net0 -netdev user,id=net0,ipv4=on,ipv6=on
     ;;
   e1000)
-    exec qemu-system-x86_64 "${COMMON[@]}" \
-      -device e1000,netdev=net0 \
-      -netdev user,id=net0,ipv4=on,ipv6=on
+    run_qemu -device e1000,netdev=net0 -netdev user,id=net0,ipv4=on,ipv6=on
     ;;
   virtio-net)
-    exec qemu-system-x86_64 "${COMMON[@]}" \
-      -device virtio-net-pci,netdev=net0 \
-      -netdev user,id=net0,ipv4=on,ipv6=on
+    run_qemu -device virtio-net-pci,netdev=net0 -netdev user,id=net0,ipv4=on,ipv6=on
     ;;
   usb-xhci)
-    exec qemu-system-x86_64 "${COMMON[@]}" \
-      -device qemu-xhci,id=xhci \
-      -device usb-kbd,bus=xhci.0 \
-      -device usb-tablet,bus=xhci.0
+    run_qemu -device qemu-xhci,id=xhci -device usb-kbd,bus=xhci.0 -device usb-tablet,bus=xhci.0
     ;;
   all)
-    # One VM with all currently targeted PCI devices present simultaneously.
-    # Useful for checking enumeration and driver matching before register/DMA work.
-    exec qemu-system-x86_64 "${COMMON[@]}" \
+    run_qemu \
       -device rtl8139,netdev=net0 \
       -device e1000,netdev=net1 \
       -device virtio-net-pci,netdev=net2 \
@@ -61,9 +53,10 @@ case "$PROFILE" in
       -device usb-tablet,bus=xhci.0
     ;;
   matrix)
+    echo "peaOS driver matrix: each profile opens QEMU; close it to continue."
     for profile in rtl8139 e1000 virtio-net usb-xhci; do
-      echo "=== peaOS temporary QEMU hardware: $profile ==="
-      "$0" "$profile" "$ISO" || true
+      echo "=== temporary QEMU hardware: $profile ==="
+      "$0" "$profile" "$ISO"
     done
     ;;
   *)
