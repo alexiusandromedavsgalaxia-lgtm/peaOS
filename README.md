@@ -5,15 +5,28 @@
 
 peaOS is being built as a complete desktop operating system, primarily in freestanding C++, with a tiny assembly entry layer where the CPU requires it.
 
+<!-- OFFICIAL_CERTIFICATES:START -->
 ## Live certificate registry
 
-The certificate information is maintained in the separate **peaOS Officially Certificates** repository. This README does **not** copy or invent certificate records. The links below always point to the current `main` branch of the certificate repository:
+The records below are synchronized automatically from `peaOS.Officialy-certificates/registry.json`.
 
-- **Live certificate registry:** https://github.com/alexiusandromedavsgalaxia-lgtm/peaOS.Officialy-certificates
-- **Live certificate status:** https://github.com/alexiusandromedavsgalaxia-lgtm/peaOS.Officialy-certificates/blob/main/README.md
-- **Certificate source tree:** https://github.com/alexiusandromedavsgalaxia-lgtm/peaOS.Officialy-certificates/tree/main
+**Known certificates: 0**
 
-The `last-commit` badge above is resolved from GitHub when the README is viewed, so it reflects the latest commit currently published in the certificate repository. The certificate repository remains the authoritative source; peaOS must not treat this README badge or a copied README section as a certificate database.
+| Field | Value |
+|---|---:|
+| Known certificates | 0 |
+| Active | 0 |
+| Revoked | 0 |
+| Expired | 0 |
+| Invalid | 0 |
+| Server unavailable | 0 |
+
+### Published certificates
+
+_No official certificates are currently published._
+<!-- OFFICIAL_CERTIFICATES:END -->
+
+The separate **peaOS Officially Certificates** repository is the authoritative source. This repository contains the synchronized `registry.json` copy consumed by the OS trust layer and generated into this README by GitHub Actions. The synchronization workflow validates the registry before updating the source tree.
 
 ## CPU architecture: X90
 
