@@ -37,7 +37,7 @@ $(BUILD)/%.o: %.cpp
 	$(CXX) $(CXXFLAGS64) -MMD -MP -c $< -o $@
 
 $(KERNEL): $(BUILD)/arch/x86_64/boot.o $(CPP_OBJECTS) arch/x86_64/linker.ld
-	$(LD) $(LDFLAGS64) -o $@ $(BUILD)/peaOS-X90.bin $(BUILD)/arch/x86_64/boot.o $(CPP_OBJECTS)
+	$(LD) $(LDFLAGS64) -o $@ $(BUILD)/arch/x86_64/boot.o $(CPP_OBJECTS)
 
 $(ISO): $(KERNEL) arch/x86_64/grub.cfg
 	mkdir -p $(BUILD)/iso/boot/grub
