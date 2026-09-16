@@ -13,7 +13,6 @@ struct Package {
     const uint8_t* digest;
     uint32_t digest_size;
     const certificate::Certificate* certificate;
-    certificate::Distribution distribution;
     const uint8_t* web_origin;
     uint32_t web_origin_size;
 };
