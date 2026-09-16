@@ -17,6 +17,16 @@ uint32_t config_read32(uint8_t bus, uint8_t slot, uint8_t function, uint8_t offs
     outl(0xCF8, address);
     return inl(0xCFC);
 }
+
+void config_write32(uint8_t bus, uint8_t slot, uint8_t function, uint8_t offset, uint32_t value) {
+    const uint32_t address = 0x80000000u |
+        (static_cast<uint32_t>(bus) << 16) |
+        (static_cast<uint32_t>(slot) << 11) |
+        (static_cast<uint32_t>(function) << 8) |
+        (offset & 0xFCu);
+    outl(0xCF8, address);
+    outl(0xCFC, value);
+}
 }
 
 namespace drivers::pci {
@@ -26,6 +36,14 @@ uint16_t read16(uint8_t bus, uint8_t slot, uint8_t function, uint8_t offset) {
     const uint32_t value = config_read32(bus, slot, function, offset);
     const uint8_t shift = static_cast<uint8_t>((offset & 2u) * 8u);
     return static_cast<uint16_t>((value >> shift) & 0xFFFFu);
+}
+void write32(uint8_t bus, uint8_t slot, uint8_t function, uint8_t offset, uint32_t value) { config_write32(bus, slot, function, offset, value); }
+void write16(uint8_t bus, uint8_t slot, uint8_t function, uint8_t offset, uint16_t value) {
+    const uint8_t aligned = offset & 0xFCu;
+    const uint8_t shift = static_cast<uint8_t>((offset & 2u) * 8u);
+    uint32_t current = config_read32(bus, slot, function, aligned);
+    current = (current & ~(0xFFFFu << shift)) | (static_cast<uint32_t>(value) << shift);
+    config_write32(bus, slot, function, aligned, current);
 }
 
 void init() { g_count = 0; for (auto& d : g_devices) d = {}; }
@@ -47,6 +65,10 @@ uint32_t enumerate() {
                 d.vendor = static_cast<uint16_t>(id & 0xFFFFu); d.device = static_cast<uint16_t>(id >> 16);
                 d.class_code = static_cast<uint8_t>(class_info >> 24); d.subclass = static_cast<uint8_t>(class_info >> 16); d.prog_if = static_cast<uint8_t>(class_info >> 8);
                 d.irq_line = static_cast<uint8_t>(irq & 0xFFu);
+                d.command = read16(d.bus, d.slot, d.function, 0x04);
+                d.status = read16(d.bus, d.slot, d.function, 0x06);
+                for (uint32_t b = 0; b < 6; ++b) d.bar[b] = config_read32(d.bus, d.slot, d.function, static_cast<uint8_t>(0x10 + b * 4));
+                d.is_bridge = d.class_code == 0x06 && d.subclass == 0x04;
             }
         }
     }
