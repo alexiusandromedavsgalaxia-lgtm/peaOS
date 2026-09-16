@@ -5,25 +5,36 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   build-x90:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Install X90 toolchain
         run: |
           sudo apt-get update
           sudo apt-get install -y g++ nasm grub-pc-bin grub-common xorriso qemu-system-x86 nodejs
+
       - name: Validate web certificate service
         working-directory: web-distribution/certificate-service
         run: node self-test.mjs
+
       - name: Build peaOS 1 Beta 1 X90 ISO
         run: make clean all
+
       - name: Validate kernel and ISO
         run: |
+          set -euo pipefail
           test -s build/peaOS-X90.bin
           test -s build/peaOS-X90.iso
           grub-file --is-x86-multiboot build/peaOS-X90.bin
+          file build/peaOS-X90.iso
+
       - name: Boot smoke test and truthful kernel marker validation
         run: |
           set +e
@@ -41,6 +52,7 @@ jobs:
           grep -F "X90 Morph: state manager initialized" build/qemu-serial.log
           grep -F "X90 filesystem snapshots: metadata manager initialized" build/qemu-serial.log
           grep -F "X90 Fusion: runtime registry initialized" build/qemu-serial.log
+
       - name: Test virtual RTL8139 driver
         env:
           QEMU_DISPLAY: none
@@ -53,6 +65,7 @@ jobs:
           grep -F "Realtek RTL8139" build/rtl8139.log
           grep -F "state: initialized" build/rtl8139.log
           grep -F "link: up" build/rtl8139.log
+
       - name: Test virtual Intel E1000 driver
         env:
           QEMU_DISPLAY: none
@@ -65,6 +78,7 @@ jobs:
           grep -F "Intel E1000 family" build/e1000.log
           grep -F "state: initialized" build/e1000.log
           grep -F "link: up" build/e1000.log
+
       - name: Test virtual VirtIO network driver
         env:
           QEMU_DISPLAY: none
@@ -76,6 +90,7 @@ jobs:
           test "$code" -eq 124
           grep -F "VirtIO network" build/virtio-net.log
           grep -F "state: initialized" build/virtio-net.log
+
       - name: Test virtual xHCI controller
         env:
           QEMU_DISPLAY: none
@@ -86,3 +101,23 @@ jobs:
           set -e
           test "$code" -eq 124
           grep -F "xHCI: running" build/xhci.log
+
+      - name: Upload bootable ISO
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: peaOS-X90-ISO
+          path: build/peaOS-X90.iso
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload kernel diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: peaOS-X90-diagnostics
+          path: |
+            build/qemu-serial.log
+            build/*.log
+          if-no-files-found: ignore
+          retention-days: 7
