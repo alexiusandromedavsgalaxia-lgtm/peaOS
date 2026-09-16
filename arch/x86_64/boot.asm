@@ -78,7 +78,9 @@ gdt64_descriptor:
     dw gdt64_descriptor - gdt64 - 1
     dq gdt64
 
-section .bss
+; Bootstrap page tables are initialized data, not BSS.  NASM rejects non-zero
+; initializers in .bss, and these entries intentionally contain physical
+; addresses/flags that must be present before paging is enabled.
 align 4096
 page_table_l4:
     dq page_table_pdpt + 0x003
@@ -93,6 +95,7 @@ page_table_pd:
 %assign page_index page_index + 1
 %endrep
 
+section .bss
 align 16
 stack_bottom:
     resb 16384
