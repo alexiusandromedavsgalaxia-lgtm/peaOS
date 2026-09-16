@@ -37,7 +37,7 @@ $(BUILD)/%.o: %.cpp
 	$(CXX) $(CXXFLAGS64) -MMD -MP -c $< -o $@
 
 $(KERNEL): $(BUILD)/arch/x86_64/boot.o $(CPP_OBJECTS) arch/x86_64/linker.ld
-	$(LD) $(LDFLAGS64) -o $@ $(BUILD)/arch/x86_64/boot.o $(CPP_OBJECTS)
+	$(LD) $(LDFLAGS64) -o $@ $(BUILD)/peaOS-X90.bin $(BUILD)/arch/x86_64/boot.o $(CPP_OBJECTS)
 
 $(ISO): $(KERNEL) arch/x86_64/grub.cfg
 	mkdir -p $(BUILD)/iso/boot/grub
@@ -48,12 +48,31 @@ $(ISO): $(KERNEL) arch/x86_64/grub.cfg
 run: $(ISO)
 	qemu-system-x86_64 -cdrom $(ISO)
 
+# Temporary realistic virtual hardware. Devices exist only while QEMU is running.
+hardware: $(ISO)
+	bash tools/qemu-hardware.sh all $(ISO)
+
+hardware-rtl8139: $(ISO)
+	bash tools/qemu-hardware.sh rtl8139 $(ISO)
+
+hardware-e1000: $(ISO)
+	bash tools/qemu-hardware.sh e1000 $(ISO)
+
+hardware-virtio-net: $(ISO)
+	bash tools/qemu-hardware.sh virtio-net $(ISO)
+
+hardware-usb-xhci: $(ISO)
+	bash tools/qemu-hardware.sh usb-xhci $(ISO)
+
+hardware-matrix: $(ISO)
+	bash tools/qemu-hardware.sh matrix $(ISO)
+
 sync-certificates:
 	$(NODE) web-distribution/certificate-service/sync-registry.mjs $(REGISTRY_HEADER)
 
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all run sync-certificates clean
+.PHONY: all run hardware hardware-rtl8139 hardware-e1000 hardware-virtio-net hardware-usb-xhci hardware-matrix sync-certificates clean
 
 -include $(DEPFILES)
