@@ -1,0 +1,113 @@
+name: Sync official certificate registry
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - registry.json
+      - .github/workflows/sync-certificates.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: peaos-certificate-registry
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout peaOS
+        uses: actions/checkout@v4
+
+      - name: Fetch authoritative certificate registry
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 3 \
+            -H 'Accept: application/vnd.github.raw+json' \
+            'https://api.github.com/repos/alexiusandromedavsgalaxia-lgtm/peaOS.Officialy-certificates/contents/registry.json?ref=main' \
+            -o /tmp/registry.b64
+          base64 -d /tmp/registry.b64 > /tmp/registry.json
+          cp /tmp/registry.json registry.json
+
+      - name: Validate authoritative registry
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const registry = JSON.parse(fs.readFileSync('registry.json', 'utf8'));
+          if (registry.schema !== 1) throw new Error('unsupported registry schema');
+          if (registry.issuer !== 'peaOS.Officialy-certificates') throw new Error('registry issuer mismatch');
+          if (registry.peaOS_certificate_version !== 3) throw new Error('certificate version mismatch');
+          if (registry.certificate_type !== 'SigningCertificate') throw new Error('certificate type mismatch');
+          if (registry.authentication !== 'R35-SHA512') throw new Error('authentication protocol mismatch');
+          if (!Array.isArray(registry.certificates)) throw new Error('registry.certificates must be an array');
+          for (const cert of registry.certificates) {
+            if (!/^[0-9a-f]{32}$/.test(cert.id || '')) throw new Error(`invalid certificate id: ${cert.id}`);
+            if (cert.type !== 'SigningCertificate') throw new Error(`invalid certificate type: ${cert.id}`);
+            if (!['active', 'revoked', 'expired', 'invalid', 'server-unavailable'].includes(cert.status)) throw new Error(`invalid certificate status: ${cert.id}`);
+            if (!/^[0-9a-f]{128}$/.test(cert.sha512 || '')) throw new Error(`invalid certificate SHA-512: ${cert.id}`);
+          }
+          console.log(`validated ${registry.certificates.length} official certificate(s)`);
+          NODE
+
+      - name: Update README registry section
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          registry = json.loads(Path('registry.json').read_text(encoding='utf-8'))
+          certs = registry['certificates']
+          counts = {status: sum(1 for c in certs if c.get('status') == status) for status in ['active', 'revoked', 'expired', 'invalid', 'server-unavailable']}
+          lines = [
+              '## Live certificate registry', '',
+              'The records below are synchronized automatically from `peaOS.Officialy-certificates/registry.json`.', '',
+              f'**Known certificates: {len(certs)}**', '',
+              '| Field | Value |', '|---|---:|',
+              f"| Known certificates | {len(certs)} |",
+              f"| Active | {counts['active']} |",
+              f"| Revoked | {counts['revoked']} |",
+              f"| Expired | {counts['expired']} |",
+              f"| Invalid | {counts['invalid']} |",
+              f"| Server unavailable | {counts['server-unavailable']} |", '',
+              '### Published certificates', ''
+          ]
+          if certs:
+              lines += ['| ID | Status | Serial | Issued | Expires | SHA-512 |', '|---|---|---|---|---|---|']
+              for c in certs:
+                  lines.append(f"| `{c['id']}` | {c['status']} | `{c.get('serial','')}` | {c.get('issued_at','')} | {c.get('expires_at','')} | `{c['sha512']}` |")
+          else:
+              lines.append('_No official certificates are currently published._')
+
+          section = '\n'.join(lines)
+          path = Path('README.md')
+          readme = path.read_text(encoding='utf-8')
+          start = '<!-- OFFICIAL_CERTIFICATES:START -->'
+          end = '<!-- OFFICIAL_CERTIFICATES:END -->'
+          if start in readme and end in readme:
+              a = readme.index(start) + len(start)
+              b = readme.index(end)
+              readme = readme[:a] + '\n' + section + '\n' + readme[b:]
+          else:
+              anchor = '## CPU architecture: X90'
+              readme = readme.replace(anchor, '<!-- OFFICIAL_CERTIFICATES:START -->\n' + section + '\n<!-- OFFICIAL_CERTIFICATES:END -->\n\n' + anchor, 1)
+          path.write_text(readme, encoding='utf-8')
+          PY
+
+      - name: Commit synchronized registry and README
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add registry.json README.md
+          if git diff --cached --quiet; then
+            echo 'certificate registry already synchronized'
+            exit 0
+          fi
+          git commit -m 'chore: sync official certificate registry'
+          git push
