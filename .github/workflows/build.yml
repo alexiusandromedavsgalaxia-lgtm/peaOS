@@ -20,6 +20,27 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y g++ nasm grub-pc-bin grub-common xorriso qemu-system-x86 nodejs
 
+      - name: Repository-wide syntax validation
+        run: |
+          set -euo pipefail
+          find . -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) -not -path './.git/*' -not -path './build/*' -print0 | while IFS= read -r -d '' file; do
+            node --check "$file"
+          done
+          find . -type f -name '*.json' -not -path './.git/*' -not -path './build/*' -print0 | while IFS= read -r -d '' file; do
+            node -e 'const fs=require("fs"); JSON.parse(fs.readFileSync(process.argv[1],"utf8"));' "$file"
+          done
+          find . -type f -name '*.sh' -not -path './.git/*' -not -path './build/*' -print0 | while IFS= read -r -d '' file; do
+            bash -n "$file"
+          done
+          find . -type f -name '*.asm' -not -path './.git/*' -not -path './build/*' -print0 | while IFS= read -r -d '' file; do
+            out="$(mktemp --suffix=.o)"
+            nasm -f elf64 "$file" -o "$out"
+            rm -f "$out"
+          done
+          while IFS= read -r -d '' file; do
+            g++ -m64 -march=x86-64 -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fno-pie -fno-plt -fno-use-cxa-atexit -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -mno-red-zone -mno-sse -mno-sse2 -Wall -Wextra -Ikernel -I. -Ibuild/generated -fsyntax-only "$file"
+          done < <(find . -type f -name '*.cpp' -not -path './.git/*' -not -path './build/*' -print0)
+
       - name: Validate web certificate service
         working-directory: web-distribution/certificate-service
         run: node self-test.mjs
