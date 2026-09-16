@@ -74,10 +74,11 @@ extern "C" void kernel_main64(uint64_t magic, uint64_t multiboot_info) {
     console::write("PCI devices: "); console::write_uint(pci_count); console::put('\n');
     console::write("Ethernet adapters detected: "); console::write_uint(net_count); console::put('\n');
     for (uint32_t i = 0; i < net_count; ++i) {
-        const network::Interface& n = *drivers::network::interface_for(i + 1);
-        console::write("  "); console::write_line(drivers::network::driver_name(n.driver));
-        console::write("    state: "); console::write_line(drivers::network::state_name(n.state));
-        console::write("    link: "); console::write_line(drivers::network::link_name(n.link));
+        const drivers::network::Interface* n = drivers::network::interface_for(i + 1);
+        if (!n) continue;
+        console::write("  "); console::write_line(drivers::network::driver_name(n->driver));
+        console::write("    state: "); console::write_line(drivers::network::state_name(n->state));
+        console::write("    link: "); console::write_line(drivers::network::link_name(n->link));
     }
     if (xhci_ok) {
         console::write("xHCI: running, ports="); console::write_uint(drivers::xhci::port_count()); console::put('\n');
