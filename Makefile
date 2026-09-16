@@ -4,20 +4,21 @@ NASM := nasm
 GRUB := grub-mkrescue
 NODE := node
 
-CXXFLAGS64 := -m64 -march=x86-64 -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fno-pie -fno-plt -fno-use-cxa-atexit -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -mno-red-zone -mno-sse -mno-sse2 -O2 -Wall -Wextra -Ikernel -I. -I$(BUILD)/generated
-LDFLAGS64 := -m elf_x86_64 -T arch/x86_64/linker.ld
-
 BUILD := build
 ISO := $(BUILD)/peaOS-X90.iso
 KERNEL := $(BUILD)/peaOS-X90.bin
 REGISTRY_HEADER := $(BUILD)/generated/certificate_registry.hpp
+
+CXXFLAGS64 := -m64 -march=x86-64 -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fno-pie -fno-plt -fno-use-cxa-atexit -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -mno-red-zone -mno-sse -mno-sse2 -O2 -Wall -Wextra -Ikernel -I. -I$(BUILD)/generated
+LDFLAGS64 := -m elf_x86_64 -T arch/x86_64/linker.ld
 
 # Compile every kernel, hardware-driver and bundled-application translation unit.
 CPP_SOURCES := arch/x86_64/kernel64.cpp $(wildcard kernel/*.cpp) $(wildcard kernel/drivers/*.cpp) $(wildcard apps/*/*.cpp)
 CPP_OBJECTS := $(patsubst %.cpp,$(BUILD)/%.o,$(CPP_SOURCES))
 DEPFILES := $(CPP_OBJECTS:.o=.d)
 
-all: $(ISO)
+all: iso
+iso: $(ISO)
 
 $(BUILD):
 	mkdir -p $(BUILD)/arch/x86_64 $(BUILD)/kernel $(BUILD)/kernel/drivers $(BUILD)/generated
@@ -73,6 +74,6 @@ sync-certificates:
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all run hardware hardware-rtl8139 hardware-e1000 hardware-virtio-net hardware-usb-xhci hardware-matrix sync-certificates clean
+.PHONY: all iso run hardware hardware-rtl8139 hardware-e1000 hardware-virtio-net hardware-usb-xhci hardware-matrix sync-certificates clean
 
 -include $(DEPFILES)
